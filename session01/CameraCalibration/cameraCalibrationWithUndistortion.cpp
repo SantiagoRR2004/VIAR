@@ -27,9 +27,15 @@ int main()
 
   // Extracting path of individual image stored in a given directory
   std::vector<cv::String> images;
-  // Path of the folder containing checkerboard images
-  std::string path = "./images/*.jpg";
-
+  // Get current directory (where the executable/script is located)
+  char currentPath[1024];
+  std::string path;
+  if (getcwd(currentPath, sizeof(currentPath)) != NULL) {
+    path = std::string(currentPath) + "/images/*.jpg";
+  } else {
+    std::cerr << "Error getting current directory!" << std::endl;
+    return 1;
+  }
   cv::glob(path, images);
 
   cv::Mat frame, gray;
