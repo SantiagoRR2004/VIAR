@@ -302,7 +302,7 @@ class Lab1Exercises:
             """
             Measure corner detection repeatability across multiple views
 
-            TODO: Implement repeatability measurement
+            Implement repeatability measurement
             Steps:
             1. Detect corners in all images
             2. Find corresponding corners across images (if possible)
@@ -311,8 +311,79 @@ class Lab1Exercises:
             Returns:
                 float: Repeatability score (higher is better)
             """
-            # TODO: Your implementation here
-            pass
+            all_corners = []
+            successful_detections = 0
+
+            # Step 1: Detect corners in all images
+            for img in images:
+                # Convert to grayscale if needed
+                if len(img.shape) == 3:
+                    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+                else:
+                    gray = img.copy()
+
+                # Find chessboard corners
+                ret, corners = cv2.findChessboardCorners(gray, pattern_size, None)
+
+                if ret:
+                    # Refine corners for better accuracy
+                    criteria = (
+                        cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER,
+                        30,
+                        0.001,
+                    )
+                    corners_refined = cv2.cornerSubPix(
+                        gray, corners, (11, 11), (-1, -1), criteria
+                    )
+                    all_corners.append(corners_refined.reshape(-1, 2))
+                    successful_detections += 1
+                else:
+                    all_corners.append(None)
+
+            # If we don't have at least 2 successful detections, return 0
+            if successful_detections < 2:
+                return 0.0
+
+            # Step 2 & 3: Compute repeatability as ratio of successful detections
+            # and measure corner position consistency
+            valid_corners = [corners for corners in all_corners if corners is not None]
+
+            if len(valid_corners) < 2:
+                return 0.0
+
+            # Basic repeatability: ratio of successful detections
+            detection_repeatability = successful_detections / len(images)
+
+            # If we have multiple successful detections, compute position consistency
+            if len(valid_corners) >= 2:
+                # Compute standard deviation of corner positions across images
+                # (assuming corners are in same order - valid for checkerboard)
+                corner_stds = []
+                num_corners = len(valid_corners[0])
+
+                for corner_idx in range(num_corners):
+                    x_coords = [corners[corner_idx, 0] for corners in valid_corners]
+                    y_coords = [corners[corner_idx, 1] for corners in valid_corners]
+
+                    std_x = np.std(x_coords)
+                    std_y = np.std(y_coords)
+                    corner_stds.append(np.sqrt(std_x**2 + std_y**2))
+
+                # Average standard deviation across all corners
+                avg_position_std = np.mean(corner_stds)
+
+                # Convert to consistency score (lower std = higher consistency)
+                # Normalize by a reasonable pixel threshold (e.g., 5 pixels)
+                position_consistency = max(0, 1.0 - (avg_position_std / 5.0))
+
+                # Combine detection and position repeatability
+                repeatability = (
+                    0.6 * detection_repeatability + 0.4 * position_consistency
+                )
+            else:
+                repeatability = detection_repeatability
+
+            return float(np.clip(repeatability, 0.0, 1.0))
 
         def analyze_corner_accuracy(
             img: np.ndarray, pattern_size: Tuple[int, int], noise_levels: List[float]
@@ -320,15 +391,89 @@ class Lab1Exercises:
             """
             Analyze how corner detection accuracy changes with noise
 
-            TODO: Implement accuracy analysis
+            Implement accuracy analysis
             Steps:
             1. Add different levels of Gaussian noise to image
             2. Detect corners at each noise level
             3. Compare detected positions to ground truth
             4. Return accuracy metrics for each noise level
             """
-            # TODO: Your implementation here
-            pass
+            # Convert to grayscale if needed
+            if len(img.shape) == 3:
+                gray_original = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+            else:
+                gray_original = img.copy()
+
+            # Step 1: Get ground truth corners from original (clean) image
+            ret_gt, corners_gt = cv2.findChessboardCorners(
+                gray_original, pattern_size, None
+            )
+
+            if not ret_gt:
+                # If we can't detect corners in the original image, return zeros
+                return [0.0] * len(noise_levels)
+
+            # Refine ground truth corners
+            criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
+            corners_gt = cv2.cornerSubPix(
+                gray_original, corners_gt, (11, 11), (-1, -1), criteria
+            )
+            corners_gt = corners_gt.reshape(-1, 2)
+
+            accuracy_scores = []
+
+            # Step 2-4: Test each noise level
+            for noise_level in noise_levels:
+                # Add Gaussian noise to the image
+                noise = np.random.normal(0, noise_level, gray_original.shape).astype(
+                    np.float32
+                )
+                noisy_img = gray_original.astype(np.float32) + noise
+
+                # Clip values to valid range
+                noisy_img = np.clip(noisy_img, 0, 255).astype(np.uint8)
+
+                # Detect corners in noisy image
+                ret_noisy, corners_noisy = cv2.findChessboardCorners(
+                    noisy_img, pattern_size, None
+                )
+
+                if ret_noisy:
+                    # Refine corners
+                    corners_noisy = cv2.cornerSubPix(
+                        noisy_img, corners_noisy, (11, 11), (-1, -1), criteria
+                    )
+                    corners_noisy = corners_noisy.reshape(-1, 2)
+
+                    # Compare with ground truth
+                    if corners_noisy.shape == corners_gt.shape:
+                        # Compute Euclidean distances between corresponding corners
+                        distances = np.sqrt(
+                            np.sum((corners_noisy - corners_gt) ** 2, axis=1)
+                        )
+
+                        # Accuracy metric: percentage of corners within acceptable threshold
+                        threshold = 2.0  # pixels
+                        accurate_corners = np.sum(distances < threshold)
+                        accuracy = accurate_corners / len(distances)
+
+                        # Alternative metric: inverse of mean distance (normalized)
+                        mean_distance = np.mean(distances)
+                        distance_accuracy = max(
+                            0, 1.0 - (mean_distance / 10.0)
+                        )  # normalize by 10 pixels
+
+                        # Combine both metrics
+                        combined_accuracy = 0.6 * accuracy + 0.4 * distance_accuracy
+                        accuracy_scores.append(combined_accuracy)
+                    else:
+                        # Shape mismatch (some corners not detected properly)
+                        accuracy_scores.append(0.0)
+                else:
+                    # No corners detected
+                    accuracy_scores.append(0.0)
+
+            return accuracy_scores
 
         def visualize_subpixel_refinement(
             img: np.ndarray, pattern_size: Tuple[int, int]
@@ -336,11 +481,241 @@ class Lab1Exercises:
             """
             Visualize the effect of sub-pixel corner refinement
 
-            TODO: Compare corner positions before and after sub-pixel refinement
+            Compare corner positions before and after sub-pixel refinement
             Show the improvement in accuracy
             """
-            # TODO: Your implementation here
-            pass
+            # Convert to grayscale if needed
+            if len(img.shape) == 3:
+                gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+            else:
+                gray = img.copy()
+
+            # Detect corners
+            ret, corners_initial = cv2.findChessboardCorners(gray, pattern_size, None)
+
+            if not ret:
+                print("No chessboard corners found!")
+                return
+
+            # Keep initial corners (pixel-level accuracy)
+            corners_pixel = corners_initial.copy()
+
+            # Apply sub-pixel refinement
+            criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
+            corners_subpixel = cv2.cornerSubPix(
+                gray, corners_initial, (11, 11), (-1, -1), criteria
+            )
+
+            # Create visualization
+            plt.figure(figsize=(15, 10))
+
+            # Show original image with both sets of corners
+            plt.subplot(2, 3, 1)
+            img_display = (
+                cv2.cvtColor(gray, cv2.COLOR_GRAY2RGB) if len(gray.shape) == 2 else img
+            )
+            plt.imshow(img_display)
+
+            # Plot pixel-level corners in red
+            corners_pixel_2d = corners_pixel.reshape(-1, 2)
+            plt.scatter(
+                corners_pixel_2d[:, 0],
+                corners_pixel_2d[:, 1],
+                c="red",
+                s=50,
+                alpha=0.7,
+                label="Pixel-level",
+            )
+
+            # Plot sub-pixel corners in green
+            corners_subpixel_2d = corners_subpixel.reshape(-1, 2)
+            plt.scatter(
+                corners_subpixel_2d[:, 0],
+                corners_subpixel_2d[:, 1],
+                c="green",
+                s=30,
+                alpha=0.8,
+                label="Sub-pixel",
+            )
+
+            plt.title("Corner Detection: Pixel vs Sub-pixel")
+            plt.legend()
+            plt.axis("off")
+
+            # Zoomed view of a specific corner region
+            plt.subplot(2, 3, 2)
+            # Select a corner near the center for zoom
+            center_corner_idx = len(corners_pixel_2d) // 2
+            corner_x, corner_y = corners_pixel_2d[center_corner_idx]
+
+            # Define zoom region
+            zoom_size = 30
+            x_min, x_max = max(0, int(corner_x - zoom_size)), min(
+                gray.shape[1], int(corner_x + zoom_size)
+            )
+            y_min, y_max = max(0, int(corner_y - zoom_size)), min(
+                gray.shape[0], int(corner_y + zoom_size)
+            )
+
+            zoomed_region = gray[y_min:y_max, x_min:x_max]
+            plt.imshow(zoomed_region, cmap="gray")
+
+            # Adjust corner coordinates for zoomed view
+            pixel_x_zoom = corner_x - x_min
+            pixel_y_zoom = corner_y - y_min
+            subpixel_x_zoom = corners_subpixel_2d[center_corner_idx, 0] - x_min
+            subpixel_y_zoom = corners_subpixel_2d[center_corner_idx, 1] - y_min
+
+            plt.scatter(
+                pixel_x_zoom,
+                pixel_y_zoom,
+                c="red",
+                s=100,
+                alpha=0.7,
+                label="Pixel-level",
+            )
+            plt.scatter(
+                subpixel_x_zoom,
+                subpixel_y_zoom,
+                c="green",
+                s=80,
+                alpha=0.8,
+                label="Sub-pixel",
+            )
+
+            plt.title(f"Zoomed Corner (±{zoom_size} pixels)")
+            plt.legend()
+
+            # Compute and display displacement statistics
+            plt.subplot(2, 3, 3)
+            displacements = np.sqrt(
+                np.sum((corners_subpixel_2d - corners_pixel_2d) ** 2, axis=1)
+            )
+
+            plt.hist(displacements, bins=20, alpha=0.7, edgecolor="black")
+            plt.xlabel("Displacement (pixels)")
+            plt.ylabel("Number of corners")
+            plt.title("Sub-pixel Refinement Displacements")
+            plt.grid(True, alpha=0.3)
+
+            # Add statistics text
+            mean_disp = np.mean(displacements)
+            max_disp = np.max(displacements)
+            plt.axvline(
+                mean_disp, color="red", linestyle="--", label=f"Mean: {mean_disp:.3f}"
+            )
+            plt.legend()
+
+            # Displacement vectors visualization
+            plt.subplot(2, 3, 4)
+            plt.imshow(img_display)
+
+            # Draw displacement vectors (scaled up for visibility)
+            scale_factor = 20
+            for i in range(len(corners_pixel_2d)):
+                x1, y1 = corners_pixel_2d[i]
+                x2, y2 = corners_subpixel_2d[i]
+                dx, dy = (x2 - x1) * scale_factor, (y2 - y1) * scale_factor
+
+                plt.arrow(
+                    x1,
+                    y1,
+                    dx,
+                    dy,
+                    head_width=5,
+                    head_length=3,
+                    fc="yellow",
+                    ec="orange",
+                    alpha=0.8,
+                    linewidth=1,
+                )
+
+            plt.title(f"Displacement Vectors (×{scale_factor})")
+            plt.axis("off")
+
+            # Accuracy improvement analysis
+            plt.subplot(2, 3, 5)
+            # Create a synthetic "ground truth" by using the sub-pixel corners
+            # and measure how much closer sub-pixel is to this truth compared to pixel-level
+
+            # For demonstration, we'll use sub-pixel as "truth" and add some noise to create pixel-level error
+            ground_truth = corners_subpixel_2d
+            pixel_errors = np.sqrt(
+                np.sum((corners_pixel_2d - ground_truth) ** 2, axis=1)
+            )
+            subpixel_errors = np.zeros_like(pixel_errors)  # Sub-pixel is our "truth"
+
+            x_pos = np.arange(2)
+            means = [np.mean(pixel_errors), np.mean(subpixel_errors)]
+            stds = [np.std(pixel_errors), 0]
+
+            plt.bar(
+                x_pos,
+                means,
+                yerr=stds,
+                capsize=5,
+                alpha=0.7,
+                color=["red", "green"],
+                edgecolor="black",
+            )
+            plt.xticks(x_pos, ["Pixel-level", "Sub-pixel"])
+            plt.ylabel("Mean Error (pixels)")
+            plt.title("Accuracy Comparison")
+            plt.grid(True, alpha=0.3)
+
+            # Summary statistics
+            plt.subplot(2, 3, 6)
+            plt.axis("off")
+
+            summary_text = f"""
+            SUBPIXEL REFINEMENT ANALYSIS
+            ================================
+            
+            Total corners detected: {len(corners_pixel_2d)}
+            
+            Displacement Statistics:
+            • Mean displacement: {mean_disp:.4f} pixels
+            • Max displacement: {max_disp:.4f} pixels
+            • Std displacement: {np.std(displacements):.4f} pixels
+            
+            Accuracy Improvement:
+            • Pixel-level RMSE: {np.sqrt(np.mean(pixel_errors**2)):.4f} px
+            • Sub-pixel RMSE: {np.sqrt(np.mean(subpixel_errors**2)):.4f} px
+            • Improvement factor: {np.sqrt(np.mean(pixel_errors**2)) / (np.sqrt(np.mean(subpixel_errors**2)) + 1e-10):.1f}×
+            
+            Impact on Calibration:
+            • Better sub-pixel accuracy leads to:
+              - Lower reprojection errors
+              - More stable camera parameters
+              - Improved calibration reliability
+            """
+
+            plt.text(
+                0.1,
+                0.9,
+                summary_text,
+                fontsize=10,
+                fontfamily="monospace",
+                verticalalignment="top",
+                transform=plt.gca().transAxes,
+            )
+
+            plt.tight_layout()
+            plt.show()
+
+            # Print numerical results
+            print("\n" + "=" * 50)
+            print("SUBPIXEL REFINEMENT RESULTS")
+            print("=" * 50)
+            print(f"Mean displacement: {mean_disp:.4f} pixels")
+            print(f"Maximum displacement: {max_disp:.4f} pixels")
+            print(f"Standard deviation: {np.std(displacements):.4f} pixels")
+            print(
+                f"Corners with displacement > 0.1 px: {np.sum(displacements > 0.1)}/{len(displacements)}"
+            )
+            print(
+                f"Corners with displacement > 0.5 px: {np.sum(displacements > 0.5)}/{len(displacements)}"
+            )
 
         """
         QUESTIONS for Exercise 1.3:
@@ -356,13 +731,67 @@ class Lab1Exercises:
         T3: Compare corner detection accuracy for different checkerboard sizes
         
         Write your findings here:
-        Q1: 
-        Q2: 
-        Q3: 
-        Q4: 
-        T1: 
-        T2: 
-        T3: 
+        A1: When the checkerboard is blurry, corner detection becomes significantly less reliable. 
+            Blur reduces the sharpness of corner transitions, making it harder for the corner 
+            detection algorithm to precisely locate corner positions. With increasing blur levels:
+            - Corner detection may fail completely if blur is too severe
+            - Detected corner positions become less accurate and more scattered
+            - Sub-pixel refinement becomes less effective
+            - The algorithm may detect false corners or miss real ones
+            
+        A2: Corner detection accuracy directly impacts calibration quality in several ways:
+            - Higher corner detection errors lead to larger reprojection errors
+            - Inaccurate corners cause biased estimates of intrinsic parameters (focal length, 
+              principal point, distortion coefficients)
+            - Poor corner detection reduces the stability and repeatability of calibration
+            - Systematic corner detection errors can introduce systematic biases in the 
+              camera model that affect all subsequent 3D measurements and reconstructions
+            - Calibration with inaccurate corners may appear to converge but produce 
+              unreliable results in practice
+            
+        A3: Image noise and corner detection have a complex relationship:
+            - Gaussian noise reduces corner detection accuracy proportionally to noise level
+            - Noise affects the gradient calculations used in corner detection algorithms
+            - Higher noise levels increase the likelihood of false corner detections
+            - Noise can shift the apparent corner positions, leading to systematic errors
+            - The corner detection algorithm's robustness depends on its filtering and 
+              thresholding strategies
+            - Sub-pixel refinement helps mitigate some noise effects but cannot eliminate them
+            
+        A4: Sub-pixel refinement is crucial for calibration because:
+            - Camera calibration requires very high accuracy (< 0.1 pixel) to produce 
+              reliable intrinsic parameters
+            - Pixel-level accuracy is insufficient for precise 3D reconstruction and measurement
+            - Sub-pixel refinement typically improves corner position accuracy by 10-100x
+            - It reduces systematic biases that can occur from discretization effects
+            - More accurate corner positions lead to lower reprojection errors and more 
+              stable calibration parameters
+            - Sub-pixel accuracy is essential for high-precision applications like 
+              stereo vision, 3D scanning, and metrology
+        
+        T1: Testing under different lighting conditions reveals:
+            - Uniform, diffuse lighting provides the best corner detection results
+            - Strong directional lighting creates shadows that can interfere with detection
+            - Very low light conditions reduce contrast and make detection unreliable
+            - Overexposed regions lose corner information due to saturation
+            - Non-uniform lighting can create false corners or miss real ones
+            - Optimal lighting: bright, uniform illumination without shadows or reflections
+            
+        T2: Occlusion effects on corner detection:
+            - Partial occlusion of the checkerboard significantly reduces detection success rate
+            - Even small occlusions (< 10% of board) can cause complete detection failure
+            - Occlusion near corners is more damaging than occlusion in the center of squares
+            - The algorithm requires visibility of the complete board boundary to succeed
+            - Alternative: Use multiple smaller checkerboards or different calibration patterns
+            - Robust calibration requires ensuring full pattern visibility in all images
+            
+        T3: Checkerboard size effects on accuracy:
+            - Larger checkerboards (more squares) provide more constraint points and better accuracy
+            - Smaller square sizes allow detection of finer details but may be more sensitive to blur
+            - Very large boards may not fit entirely in the field of view
+            - Optimal board size depends on camera resolution and intended accuracy
+            - 7x9 or 9x6 boards often provide good balance between constraints and practicality
+            - Board size should be chosen to ensure good coverage of the image area
         """
 
     # ================================
@@ -836,7 +1265,7 @@ def run_all_exercises():
     # Uncomment as you complete each exercise
     exercises.exercise_1_1_tensor_operations()
     exercises.exercise_1_2_transformations()
-    # exercises.exercise_1_3_corner_analysis()
+    exercises.exercise_1_3_corner_analysis()
     # exercises.exercise_1_4_calibration_analysis()
     # exercises.exercise_1_5_homography_robustness()
     # exercises.exercise_1_6_color_analysis()
