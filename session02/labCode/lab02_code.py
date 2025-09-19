@@ -891,22 +891,32 @@ def visualize_all_results():
     # TODO: Students implement comprehensive visualization
     # Should include:
     # - Aliasing demonstration plots
-    aliasing_results = SamplingAnalysis().demonstrate_aliasing(
-        frequency=0.01, downsample_factor=32
-    )
-    print(
-        f"Theoretical aliased frequency: {aliasing_results["theoretical_alias_freq"]}"
-    )
+
+    sampling = SamplingAnalysis()
+
     # Visualize results
-    plt.figure(figsize=(12, 4))
-    plt.subplot(1, 2, 1)
-    plt.title("Aliased (Naive Downsample)")
-    plt.imshow(cv2.cvtColor(aliasing_results["aliased"], cv2.COLOR_BGR2RGB))
-    plt.axis("off")
-    plt.subplot(1, 2, 2)
-    plt.title("Anti-Aliased (Gaussian + Downsample)")
-    plt.imshow(cv2.cvtColor(aliasing_results["anti_aliased"], cv2.COLOR_BGR2RGB))
-    plt.axis("off")
+    plt.ion()
+    fig, axes = plt.subplots(1, 2, figsize=(12, 4))
+
+    while True:
+        for i in range(128):
+            aliasing_results = sampling.demonstrate_aliasing(
+                frequency=0.01, downsample_factor=i + 1
+            )
+
+            fig.suptitle(f"Downsample Factor: {i + 1}", fontsize=16)
+
+            axes[0].imshow(cv2.cvtColor(aliasing_results["aliased"], cv2.COLOR_BGR2RGB))
+            axes[0].set_title("Aliased (Naive Downsample)")
+            axes[0].axis("off")
+
+            axes[1].imshow(
+                cv2.cvtColor(aliasing_results["anti_aliased"], cv2.COLOR_BGR2RGB)
+            )
+            axes[1].set_title("Anti-Aliased (Gaussian + Downsample)")
+            axes[1].axis("off")
+
+            plt.pause(0.1)
 
     # - Color space conversion comparisons
     # - Enhancement method comparisons
@@ -916,7 +926,7 @@ def visualize_all_results():
     # - Morphological operation effects
     # - CNN filter visualizations
 
-    plt.show()
+    # plt.show()
 
 
 def performance_analysis():
