@@ -48,7 +48,7 @@ class BasicBlock(nn.Module):
     ):
         super(BasicBlock, self).__init__()
 
-        # TODO: Implement the basic block
+        # Implement the basic block
         # Hint: You need:
         # - First 3x3 conv with given stride
         # - BatchNorm + ReLU
@@ -56,29 +56,29 @@ class BasicBlock(nn.Module):
         # - BatchNorm (no ReLU here)
         # - Store downsample for skip connection
 
-        self.conv1 = None  # TODO: Replace with actual implementation
-        self.bn1 = None  # TODO: Replace with actual implementation
-        self.conv2 = None  # TODO: Replace with actual implementation
-        self.bn2 = None  # TODO: Replace with actual implementation
+        self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=stride)
+        self.bn1 = nn.ReLU(nn.BatchNorm2d(out_channels))
+        self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size=3, stride=1)
+        self.bn2 = nn.BatchNorm2d(out_channels)
         self.downsample = downsample
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        # TODO: Implement forward pass
+        # Implement forward pass
         # Remember: output = F(x) + x (or F(x) + downsample(x))
 
         identity = x
 
-        # TODO: Apply first conv + bn + relu
-        out = None
+        # Apply first conv + bn + relu
+        out = self.bn1(self.conv1(x))
 
-        # TODO: Apply second conv + bn (no relu)
-        out = None
+        # Apply second conv + bn (no relu)
+        out = self.bn2(self.conv2(out))
 
-        # TODO: Apply skip connection
+        # Apply skip connection
         if self.downsample is not None:
-            identity = None  # TODO: Apply downsample to identity
+            identity = self.downsample(identity)
 
-        # TODO: Add identity and apply final ReLU
+        # Add identity and apply final ReLU
         out += identity
         out = F.relu(out)
 
