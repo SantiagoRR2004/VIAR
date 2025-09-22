@@ -252,20 +252,20 @@ def resnet18(num_classes: int = 10) -> ResNet:
 
 def resnet34(num_classes: int = 10) -> ResNet:
     """Create ResNet-34"""
-    # TODO: Return ResNet with BasicBlock and [3, 4, 6, 3] layers
-    return None
+    # Return ResNet with BasicBlock and [3, 4, 6, 3] layers
+    return ResNet(BasicBlock, [3, 4, 6, 3], num_classes=num_classes)
 
 
 def resnet50(num_classes: int = 10) -> ResNet:
     """Create ResNet-50"""
-    # TODO: Return ResNet with BottleneckBlock and [3, 4, 6, 3] layers
-    return None
+    # Return ResNet with BottleneckBlock and [3, 4, 6, 3] layers
+    return ResNet(BottleneckBlock, [3, 4, 6, 3], num_classes=num_classes)
 
 
 def resnet101(num_classes: int = 10) -> ResNet:
     """Create ResNet-101"""
-    # TODO: Return ResNet with BottleneckBlock and [3, 4, 23, 3] layers
-    return None
+    # Return ResNet with BottleneckBlock and [3, 4, 23, 3] layers
+    return ResNet(BottleneckBlock, [3, 4, 23, 3], num_classes=num_classes)
 
 
 # ============================================================================
@@ -783,6 +783,7 @@ def test_resnet_implementation():
         "ResNet-18": resnet18(num_classes=10),
         "ResNet-34": resnet34(num_classes=10),
         "ResNet-50": resnet50(num_classes=10),
+        "ResNet-101": resnet101(num_classes=10),
     }
 
     test_input = torch.randn(2, 3, 32, 32)  # CIFAR-10 input size
