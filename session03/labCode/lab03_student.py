@@ -57,11 +57,16 @@ class BasicBlock(nn.Module):
         # - Store downsample for skip connection
 
         self.conv1 = nn.Conv2d(
-            in_channels, out_channels, kernel_size=3, stride=stride, padding=1
+            in_channels,
+            out_channels,
+            kernel_size=3,
+            stride=stride,
+            padding=1,
+            bias=False,
         )
-        self.bn1 = nn.Sequential(nn.BatchNorm2d(out_channels), nn.ReLU())
+        self.bn1 = nn.Sequential(nn.BatchNorm2d(out_channels), nn.ReLU(inplace=True))
         self.conv2 = nn.Conv2d(
-            out_channels, out_channels, kernel_size=3, stride=1, padding=1
+            out_channels, out_channels, kernel_size=3, stride=1, padding=1, bias=False
         )
         self.bn2 = nn.BatchNorm2d(out_channels)
         self.downsample = downsample
@@ -70,7 +75,7 @@ class BasicBlock(nn.Module):
         # Implement forward pass
         # Remember: output = F(x) + x (or F(x) + downsample(x))
 
-        identity = x
+        identity = x.clone()
 
         # Apply first conv + bn + relu
         out = self.bn1(self.conv1(x))
@@ -170,9 +175,16 @@ class ResNet(nn.Module):
         # For CIFAR: use 3x3 conv, bn, relu (no maxpool)
 
         self.conv1 = nn.Conv2d(
-            input_channels, self.in_channels, kernel_size=7, stride=2, padding=3
+            input_channels,
+            self.in_channels,
+            kernel_size=7,
+            stride=2,
+            padding=3,
+            bias=False,
         )
-        self.bn1 = nn.ReLU(nn.BatchNorm2d(self.in_channels))
+        self.bn1 = nn.Sequential(
+            nn.BatchNorm2d(self.in_channels), nn.ReLU(inplace=True)
+        )
         self.maxpool = nn.MaxPool2d(
             kernel_size=3, stride=2, padding=1
         )  # MaxPool (for ImageNet) or None (for CIFAR)
@@ -238,7 +250,7 @@ class ResNet(nn.Module):
 
         # Final layers
         x = self.avgpool(x)
-        x = torch.flatten(x, 1)
+        x = torch.squeeze(x)
         x = self.fc(x)
 
         return x
