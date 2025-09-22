@@ -142,8 +142,8 @@ class BottleneckBlock(nn.Module):
         if self.downsample is not None:
             identity = self.downsample(identity)
 
-        # Add identity and apply final ReLU
-        out += identity
+            # Add identity and apply final ReLU
+            out += identity
         out = F.relu(out)
 
         return out

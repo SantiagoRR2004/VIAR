@@ -42,12 +42,12 @@ import warnings
 warnings.filterwarnings("ignore")
 
 # Import our implementations
-from lab3_student_template import *  # Use student template for practice
+from lab03_student import *  # Use student template for practice
 
 # from lab3_instructor_complete import *  # Use complete implementation if needed
 
 # Import visualization utilities
-from lab3_visualization_utils import *
+from utils import *
 
 # Check device
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
