@@ -24,6 +24,14 @@ import matplotlib.pyplot as plt
 from typing import Tuple, Dict, List, Optional
 import warnings
 
+import pickle
+import numpy as np
+from torch.utils.data import TensorDataset, DataLoader
+import torch.optim as optim
+import time
+
+import pathlib
+
 warnings.filterwarnings("ignore")
 
 # ============================================================================
@@ -716,10 +724,10 @@ def create_data_loaders(
     # TODO: Load datasets
     if dataset_name == "CIFAR10":
         train_dataset = None
-        test_dataset = None
+        val_dataset = None
     elif dataset_name == "CIFAR100":
         train_dataset = None
-        test_dataset = None
+        val_dataset = None
     else:
         raise ValueError(f"Unsupported dataset: {dataset_name}")
 
@@ -798,6 +806,100 @@ def test_resnet_implementation():
         "ResNet-101": resnet101(num_classes=10),
     }
 
+    def load_cifar10(batch_size=64):
+        # https://www.cs.toronto.edu/~kriz/cifar.html
+        cifar_path = pathlib.Path("./cifar-10-batches-py/data_batch_1")
+        with open(cifar_path, "rb") as f:
+            batch = pickle.load(f, encoding="bytes")
+
+        data = batch[b"data"].reshape(-1, 3, 32, 32).astype(np.float32) / 255.0
+        labels = np.array(batch[b"labels"])
+
+        train_data = torch.from_numpy(data[: int(0.8 * len(data))])
+        train_labels = torch.from_numpy(labels[: int(0.8 * len(labels))])
+        val_data = torch.from_numpy(data[int(0.8 * len(data)) :])
+        val_labels = torch.from_numpy(labels[int(0.8 * len(labels)) :])
+
+        print("Train data shape:", train_data.shape)
+        print("Train labels shape:", train_labels.shape)
+        print("Validation data shape:", val_data.shape)
+        print("Validation labels shape:", val_labels.shape)
+
+        train_dataset = TensorDataset(train_data, train_labels)
+        val_dataset = TensorDataset(val_data, val_labels)
+
+        return DataLoader(
+            train_dataset, batch_size=batch_size, shuffle=True
+        ), DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
+
+    def train_resnet(
+        model,
+        traind_loader,
+        val_loader,
+        epochs=1,
+        device=torch.device("cpu"),
+        save_model=False,
+        model_name="resnet",
+    ):
+        model.to(device)
+        optimizer = optim.Adam(model.parameters(), lr=0.001)
+        criterion = nn.CrossEntropyLoss()
+
+        results = {"train_acc": [], "val_acc": [], "train_time": 0.0}
+
+        start_time = time.time()
+
+        for epoch in range(epochs):
+            model.train()
+            train_loss = 0.0
+            train_correct = 0
+            train_total = 0
+
+            for data, target in traind_loader:
+                data, target = data.to(device), target.to(device)
+                optimizer.zero_grad()
+                outputs = model(data)
+                loss = criterion(outputs, target)
+                loss.backward()
+                optimizer.step()
+
+                train_loss += loss.item() * data.size(0)
+                _, predicted = torch.max(outputs.data, 1)
+                train_total += target.size(0)
+                train_correct += (predicted == target).sum().item()
+
+            train_acc = 100 * train_correct / train_total
+
+            # Validation
+
+            model.eval()
+            val_loss = 0.0
+            val_correct = 0
+            val_total = 0
+
+            with torch.no_grad():
+                for data, target in val_loader:
+                    data, target = data.to(device), target.to(device)
+                    outputs = model(data)
+                    loss = criterion(outputs, target)
+
+                    val_loss += loss.item() * data.size(0)
+                    _, predicted = torch.max(outputs.data, 1)
+                    val_total += target.size(0)
+                    val_correct += (predicted == target).sum().item()
+
+            val_acc = 100 * val_correct / val_total
+            results["train_acc"].append(train_acc)
+            results["val_acc"].append(val_acc)
+            print(
+                f"Epoch {epoch+1}/{epochs}, Loss: {train_loss/train_total:.2f}, Train_Accuracy: {train_acc:.2f}%, Val_Accuracy: {val_acc:.2f}%"
+            )
+        results["train_time"] = time.time() - start_time
+
+        if save_model:
+            torch.save(model.state_dict(), f"{model_name}.pth")
+        return model, results
+
     test_input = torch.randn(2, 3, 32, 32)  # CIFAR-10 input size
 
     for name, model in models.items():
@@ -809,6 +911,25 @@ def test_resnet_implementation():
                 print(f"✗ {name}: Error - {e}")
         else:
             print(f"✗ {name}: Not implemented")
+
+    # Load CIFAR-10 data
+    train_loader, test_loader = load_cifar10(batch_size=64)
+
+    for name, model in models.items():
+        if model is not None:
+            print(f"\nTraining {name} on CIFAR-10...")
+            trained_model, history = train_resnet(
+                model,
+                train_loader,
+                test_loader,
+                epochs=2,
+                device=torch.device("cuda" if torch.cuda.is_available() else "cpu"),
+                save_model=True,
+                model_name=name,
+            )
+            print(
+                f"Training complete for {name}. Final Val Accuracy: {history['val_acc'][-1]:.2f}%"
+            )
 
 
 def test_attention_implementation():
