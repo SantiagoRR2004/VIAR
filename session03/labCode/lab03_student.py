@@ -713,6 +713,8 @@ class ArchitectureComparator:
 def create_data_loaders(
     dataset_name: str = "CIFAR10",
     batch_size: int = 128,
+    num_batches: int = 5,
+    train_split: float = 0.9,
     subset_size: Optional[int] = None,
 ) -> Tuple[DataLoader, DataLoader]:
     """Create train and test data loaders"""
@@ -725,8 +727,55 @@ def create_data_loaders(
 
     # TODO: Load datasets
     if dataset_name == "CIFAR10":
-        train_dataset = None
-        val_dataset = None
+        all_data = []
+        all_labels = []
+
+        # Load 5 batches
+        for i in range(1, num_batches + 1):
+            batch_file = os.path.join(
+                currentDirectory, "cifar-10-batches-py", f"data_batch_{i}"
+            )
+
+            with open(batch_file, "rb") as f:
+                batch = pickle.load(f, encoding="bytes")
+
+            # Extraer datos y etiquetas
+            data = batch[b"data"].reshape(-1, 3, 32, 32).astype(np.float32) / 255.0
+            labels = np.array(batch[b"labels"])
+
+            all_data.append(data)
+            all_labels.append(labels)
+
+            print(f"Loaded batch {i}: {data.shape[0]} samples")
+
+        test_batch_file = os.path.join(
+            currentDirectory, "cifar-10-batches-py", "test_batch"
+        )
+
+        with open(test_batch_file, "rb") as f:
+            test_batch = pickle.load(f, encoding="bytes")
+        test_data = (
+            test_batch[b"data"].reshape(-1, 3, 32, 32).astype(np.float32) / 255.0
+        )
+        test_labels = np.array(test_batch[b"labels"])
+
+        # Concatenate all batches
+        all_data = np.concatenate(all_data, axis=0)
+        all_labels = np.concatenate(all_labels, axis=0)
+
+        train_size = int(train_split * len(all_data))
+        train_data = torch.from_numpy(all_data[:train_size])
+        train_labels = torch.from_numpy(all_labels[:train_size])
+        val_data = torch.from_numpy(all_data[train_size:])
+        val_labels = torch.from_numpy(all_labels[train_size:])
+
+        test_data = torch.from_numpy(test_data)
+        test_labels = torch.from_numpy(test_labels)
+
+        train_dataset = TensorDataset(train_data, train_labels)
+        val_dataset = TensorDataset(val_data, val_labels)
+        test_dataset = TensorDataset(test_data, test_labels)
+
     elif dataset_name == "CIFAR100":
         train_dataset = None
         val_dataset = None
@@ -738,10 +787,11 @@ def create_data_loaders(
         train_dataset = None  # TODO: Create subset
 
     # TODO: Create data loaders
-    train_loader = None
-    test_loader = None
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
+    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 
-    return train_loader, test_loader
+    return train_loader, val_loader, test_loader
 
 
 def train_model(
@@ -750,6 +800,8 @@ def train_model(
     val_loader: DataLoader,
     epochs: int = 10,
     device: torch.device = torch.device("cpu"),
+    save_model=False,
+    model_name="resnet",
 ) -> Dict[str, List[float]]:
     """Train a model and return training history"""
     # TODO: Implement training loop
@@ -758,24 +810,40 @@ def train_model(
     model.to(device)
 
     # TODO: Define optimizer and criterion
-    optimizer = None
-    criterion = None
+    optimizer = optim.Adam(model.parameters(), lr=0.001)
+    criterion = nn.CrossEntropyLoss()
     scheduler = None  # Optional: learning rate scheduler
 
-    history = {"train_loss": [], "train_acc": [], "val_loss": [], "val_acc": []}
-
+    history = {
+        "train_loss": [],
+        "train_acc": [],
+        "val_loss": [],
+        "val_acc": [],
+        "train_time": 0.0,
+    }
+    start_time = time.time()
     for epoch in range(epochs):
-        # TODO: Training phase
         model.train()
         train_loss = 0.0
         train_correct = 0
         train_total = 0
 
         for batch_idx, (data, target) in enumerate(train_loader):
-            # TODO: Implement training step
-            pass
+            data, target = data.to(device), target.to(device)
+            optimizer.zero_grad()
+            outputs = model(data)
+            loss = criterion(outputs, target)
+            loss.backward()
+            optimizer.step()
 
-        # TODO: Validation phase
+            train_loss += loss.item() * data.size(0)  # Mean loss times batch size
+            _, predicted = torch.max(
+                outputs.data, 1
+            )  # (max_value, index of class with max value)
+            train_total += target.size(0)  # Total number of samples
+            train_correct += (predicted == target).sum().item()
+
+        train_acc = 100 * train_correct / train_total
         model.eval()
         val_loss = 0.0
         val_correct = 0
@@ -783,10 +851,29 @@ def train_model(
 
         with torch.no_grad():
             for data, target in val_loader:
-                # TODO: Implement validation step
-                pass
+                data, target = data.to(device), target.to(device)
+                outputs = model(data)
+                loss = criterion(outputs, target)
 
-        # TODO: Update history and print progress
+                val_loss += loss.item() * data.size(0)
+                _, predicted = torch.max(outputs.data, 1)
+                val_total += target.size(0)
+                val_correct += (predicted == target).sum().item()
+
+        val_acc = 100 * val_correct / val_total
+        history["train_loss"].append(train_loss / train_total)
+        history["train_acc"].append(train_acc)
+        history["val_loss"].append(val_loss / val_total)
+        history["val_acc"].append(val_acc)
+        print(
+            f"Epoch {epoch+1}/{epochs}, Loss: {train_loss/train_total:.2f}, Train_Accuracy: {train_acc:.2f}%, Val_Accuracy: {val_acc:.2f}%"
+        )
+        if scheduler is not None:
+            scheduler.step()
+    history["train_time"] = time.time() - start_time
+
+    if save_model:
+        torch.save(model.state_dict(), f"{model_name}.pth")
 
     return history
 
@@ -808,102 +895,6 @@ def test_resnet_implementation():
         "ResNet-101": resnet101(num_classes=10),
     }
 
-    def load_cifar10(batch_size=64):
-        # https://www.cs.toronto.edu/~kriz/cifar.html
-        cifar_path = os.path.join(
-            currentDirectory, "cifar-10-batches-py", "data_batch_1"
-        )
-        with open(cifar_path, "rb") as f:
-            batch = pickle.load(f, encoding="bytes")
-
-        data = batch[b"data"].reshape(-1, 3, 32, 32).astype(np.float32) / 255.0
-        labels = np.array(batch[b"labels"])
-
-        train_data = torch.from_numpy(data[: int(0.8 * len(data))])
-        train_labels = torch.from_numpy(labels[: int(0.8 * len(labels))])
-        val_data = torch.from_numpy(data[int(0.8 * len(data)) :])
-        val_labels = torch.from_numpy(labels[int(0.8 * len(labels)) :])
-
-        print("Train data shape:", train_data.shape)
-        print("Train labels shape:", train_labels.shape)
-        print("Validation data shape:", val_data.shape)
-        print("Validation labels shape:", val_labels.shape)
-
-        train_dataset = TensorDataset(train_data, train_labels)
-        val_dataset = TensorDataset(val_data, val_labels)
-
-        return DataLoader(
-            train_dataset, batch_size=batch_size, shuffle=True
-        ), DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
-
-    def train_resnet(
-        model,
-        traind_loader,
-        val_loader,
-        epochs=1,
-        device=torch.device("cpu"),
-        save_model=False,
-        model_name="resnet",
-    ):
-        model.to(device)
-        optimizer = optim.Adam(model.parameters(), lr=0.001)
-        criterion = nn.CrossEntropyLoss()
-
-        results = {"train_acc": [], "val_acc": [], "train_time": 0.0}
-
-        start_time = time.time()
-
-        for epoch in range(epochs):
-            model.train()
-            train_loss = 0.0
-            train_correct = 0
-            train_total = 0
-
-            for data, target in traind_loader:
-                data, target = data.to(device), target.to(device)
-                optimizer.zero_grad()
-                outputs = model(data)
-                loss = criterion(outputs, target)
-                loss.backward()
-                optimizer.step()
-
-                train_loss += loss.item() * data.size(0)
-                _, predicted = torch.max(outputs.data, 1)
-                train_total += target.size(0)
-                train_correct += (predicted == target).sum().item()
-
-            train_acc = 100 * train_correct / train_total
-
-            # Validation
-
-            model.eval()
-            val_loss = 0.0
-            val_correct = 0
-            val_total = 0
-
-            with torch.no_grad():
-                for data, target in val_loader:
-                    data, target = data.to(device), target.to(device)
-                    outputs = model(data)
-                    loss = criterion(outputs, target)
-
-                    val_loss += loss.item() * data.size(0)
-                    _, predicted = torch.max(outputs.data, 1)
-                    val_total += target.size(0)
-                    val_correct += (predicted == target).sum().item()
-
-            val_acc = 100 * val_correct / val_total
-            results["train_acc"].append(train_acc)
-            results["val_acc"].append(val_acc)
-            print(
-                f"Epoch {epoch+1}/{epochs}, Loss: {train_loss/train_total:.2f}, Train_Accuracy: {train_acc:.2f}%, Val_Accuracy: {val_acc:.2f}%"
-            )
-        results["train_time"] = time.time() - start_time
-
-        if save_model:
-            torch.save(model.state_dict(), f"{model_name}.pth")
-        return model, results
-
     test_input = torch.randn(2, 3, 32, 32)  # CIFAR-10 input size
 
     for name, model in models.items():
@@ -917,15 +908,15 @@ def test_resnet_implementation():
             print(f"✗ {name}: Not implemented")
 
     # Load CIFAR-10 data
-    train_loader, test_loader = load_cifar10(batch_size=64)
+    train_loader, val_loader, test_loader = create_data_loaders()
 
     for name, model in models.items():
         if model is not None:
             print(f"\nTraining {name} on CIFAR-10...")
-            trained_model, history = train_resnet(
+            history = train_model(
                 model,
                 train_loader,
-                test_loader,
+                val_loader,
                 epochs=2,
                 device=torch.device("cuda" if torch.cuda.is_available() else "cpu"),
                 save_model=True,
