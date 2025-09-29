@@ -36,14 +36,14 @@ class DoubleConv(nn.Module):
         # TODO Task 1.1: Implement double convolution block
         # Hint: Conv2d -> BatchNorm2d -> ReLU -> Conv2d -> BatchNorm2d -> ReLU
         # Use kernel_size=3, padding=1 to maintain spatial dimensions
-        self.double_conv =  nn.Sequential(
-                    nn.Conv2d ( in_channels , out_channels , 3 , padding =1) ,
-                    nn.BatchNorm2d ( out_channels ) ,
-                    nn.ReLU ( inplace = True ) ,
-                    nn.Conv2d ( out_channels , out_channels , 3 , padding =1) ,
-                    nn.BatchNorm2d ( out_channels ) ,
-                    nn.ReLU ( inplace = True ) ,
-                    )
+        self.double_conv = nn.Sequential(
+            nn.Conv2d(in_channels, out_channels, 3, padding=1),
+            nn.BatchNorm2d(out_channels),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(out_channels, out_channels, 3, padding=1),
+            nn.BatchNorm2d(out_channels),
+            nn.ReLU(inplace=True),
+        )
 
     def forward(self, x):
         return self.double_conv(x)
@@ -78,16 +78,20 @@ class DecoderBlock(nn.Module):
 
         # TODO Task 1.2: Initialize upsampling layer
         if upsampling == "transpose":
-            self.up = nn.ConvTranspose2d(in_channels, out_channels, kernel_size=2, stride=2)
+            self.up = nn.ConvTranspose2d(
+                in_channels, out_channels, kernel_size=2, stride=2
+            )
         else:  # bilinear
             self.up = nn.Sequential(
                 nn.Upsample(scale_factor=2, mode="bilinear", align_corners=True),
-                nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1)
+                nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1),
             )
 
         # TODO Task 1.2: Initialize double convolution
         # Note: Input will be concatenated features (in_channels + skip_channels)
-        self.conv = DoubleConv(torch.cat([in_channels, skip_channels], dim=1), out_channels)
+        self.conv = DoubleConv(
+            torch.cat([in_channels, skip_channels], dim=1), out_channels
+        )
 
     def forward(self, x, skip_features):
         # TODO Task 1.2: Implement forward pass
