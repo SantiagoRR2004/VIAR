@@ -17,24 +17,26 @@ import numpy as np
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 import warnings
-warnings.filterwarnings('ignore')
+
+warnings.filterwarnings("ignore")
 
 # Set device
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Using device: {device}")
 
 # ================== Part 1: U-Net Architecture ==================
 
+
 class DoubleConv(nn.Module):
     """Two consecutive convolution layers with BatchNorm and ReLU"""
-    
+
     def __init__(self, in_channels, out_channels):
         super().__init__()
         # TODO Task 1.1: Implement double convolution block
         # Hint: Conv2d -> BatchNorm2d -> ReLU -> Conv2d -> BatchNorm2d -> ReLU
         # Use kernel_size=3, padding=1 to maintain spatial dimensions
         self.double_conv = None  # TODO: Replace with your implementation
-        
+
     def forward(self, x):
         # TODO Task 1.1: Implement forward pass
         pass
@@ -42,39 +44,41 @@ class DoubleConv(nn.Module):
 
 class EncoderBlock(nn.Module):
     """Encoder block with double convolution and pooling"""
-    
+
     def __init__(self, in_channels, out_channels):
         super().__init__()
         # TODO Task 1.1: Initialize layers
         # You need: DoubleConv and MaxPool2d
         self.conv = None  # TODO
         self.pool = None  # TODO
-        
+
     def forward(self, x):
         # TODO Task 1.1: Implement forward pass
         # Return both: features before pooling (for skip connection) and after pooling
         features = None  # TODO: Apply double convolution
-        pooled = None    # TODO: Apply pooling to features
+        pooled = None  # TODO: Apply pooling to features
         return features, pooled
 
 
 class DecoderBlock(nn.Module):
     """Decoder block with upsampling, skip connection, and double convolution"""
-    
-    def __init__(self, in_channels, skip_channels, out_channels, upsampling='transpose'):
+
+    def __init__(
+        self, in_channels, skip_channels, out_channels, upsampling="transpose"
+    ):
         super().__init__()
         self.upsampling = upsampling
-        
+
         # TODO Task 1.2: Initialize upsampling layer
-        if upsampling == 'transpose':
+        if upsampling == "transpose":
             self.up = None  # TODO: Use ConvTranspose2d
         else:  # bilinear
             self.up = None  # TODO: Use Upsample + Conv2d
-            
+
         # TODO Task 1.2: Initialize double convolution
         # Note: Input will be concatenated features (in_channels + skip_channels)
         self.conv = None  # TODO
-        
+
     def forward(self, x, skip_features):
         # TODO Task 1.2: Implement forward pass
         # 1. Upsample x
@@ -87,52 +91,53 @@ class DecoderBlock(nn.Module):
 
 class UNet(nn.Module):
     """Complete U-Net architecture"""
-    
+
     def __init__(self, in_channels=3, out_channels=1, features=[64, 128, 256, 512]):
         super().__init__()
-        
+
         # TODO Task 1.3: Build encoder path
         self.encoders = nn.ModuleList()
         self.pools = nn.ModuleList()
-        
+
         # TODO: Create encoder blocks
         # Hint: First block takes in_channels, others take features[i-1]
-        
+
         # TODO Task 1.3: Bottleneck (deepest part)
         self.bottleneck = None  # TODO: DoubleConv at the bottom
-        
+
         # TODO Task 1.3: Build decoder path
         self.decoders = nn.ModuleList()
-        
+
         # TODO: Create decoder blocks (in reverse order)
-        
+
         # TODO Task 1.4: Final output layer
         self.final_conv = None  # TODO: Conv2d to get desired output channels
-        
+
     def forward(self, x):
         # TODO Task 1.4: Connect everything together
         skip_connections = []
-        
+
         # Encoder path
         # TODO: Process through encoders, save skip connections
-        
+
         # Bottleneck
         # TODO: Process through bottleneck
-        
+
         # Decoder path
         # TODO: Process through decoders with skip connections
-        
+
         # Final layer
         # TODO: Apply final convolution
-        
+
         return x  # TODO: Return final output
 
 
 # ================== Part 2: Skip Connection Strategies ==================
 
+
 class AttentionGate(nn.Module):
     """Attention gate for skip connections"""
-    
+
     def __init__(self, gate_channels, skip_channels):
         super().__init__()
         # TODO Task 2.3: Implement attention gate
@@ -141,7 +146,7 @@ class AttentionGate(nn.Module):
         self.W_x = None  # TODO: Conv2d for skip features
         self.psi = None  # TODO: Conv2d for final attention coefficients
         self.relu = nn.ReLU(inplace=True)
-        
+
     def forward(self, gate, skip):
         # TODO Task 2.3: Implement attention mechanism
         # 1. Process gate and skip through respective convolutions
@@ -154,35 +159,35 @@ class AttentionGate(nn.Module):
 
 class FlexibleSkipConnection(nn.Module):
     """Flexible skip connection with different strategies"""
-    
-    def __init__(self, decoder_channels, skip_channels, mode='concat'):
+
+    def __init__(self, decoder_channels, skip_channels, mode="concat"):
         super().__init__()
         self.mode = mode
-        
-        if mode == 'concat':
+
+        if mode == "concat":
             # TODO Task 2.1: Setup for concatenation
             # Output conv to handle concatenated channels
             self.conv = None  # TODO
-            
-        elif mode == 'add':
+
+        elif mode == "add":
             # TODO Task 2.2: Setup for addition
             # May need 1x1 conv to match channels
             self.proj = None  # TODO: Handle channel mismatch
-            
-        elif mode == 'attention':
+
+        elif mode == "attention":
             # TODO Task 2.3: Setup attention gate
             self.attention_gate = None  # TODO
             self.conv = None  # TODO: Output conv after attention
-            
+
     def forward(self, decoder_features, skip_features):
         # TODO: Implement forward pass based on mode
-        if self.mode == 'concat':
+        if self.mode == "concat":
             # TODO Task 2.1
             pass
-        elif self.mode == 'add':
+        elif self.mode == "add":
             # TODO Task 2.2
             pass
-        elif self.mode == 'attention':
+        elif self.mode == "attention":
             # TODO Task 2.3
             pass
         return None  # TODO
@@ -190,13 +195,14 @@ class FlexibleSkipConnection(nn.Module):
 
 # ================== Part 3: Loss Functions ==================
 
+
 class DiceLoss(nn.Module):
     """Dice loss for segmentation"""
-    
+
     def __init__(self, smooth=1e-6):
         super().__init__()
         self.smooth = smooth
-        
+
     def forward(self, pred, target):
         # TODO Task 3.1: Implement Dice loss
         # 1. Apply sigmoid to predictions
@@ -204,51 +210,52 @@ class DiceLoss(nn.Module):
         # 3. Compute intersection and union
         # 4. Calculate Dice coefficient
         # 5. Return 1 - dice
-        
+
         dice = None  # TODO
         return 1 - dice
 
 
 class FocalLoss(nn.Module):
     """Focal loss for addressing class imbalance"""
-    
+
     def __init__(self, alpha=0.25, gamma=2.0):
         super().__init__()
         self.alpha = alpha
         self.gamma = gamma
-        
+
     def forward(self, pred, target):
         # TODO Task 3.2: Implement Focal loss
         # 1. Apply sigmoid and compute BCE
         # 2. Calculate p_t (probability of correct class)
         # 3. Apply focal term: (1-p_t)^gamma
         # 4. Apply alpha weighting
-        
+
         loss = None  # TODO
         return loss
 
 
 class CombinedLoss(nn.Module):
     """Combined loss function"""
-    
-    def __init__(self, weights={'ce': 0.5, 'dice': 0.5, 'focal': 0.0}):
+
+    def __init__(self, weights={"ce": 0.5, "dice": 0.5, "focal": 0.0}):
         super().__init__()
         # TODO Task 3.3: Initialize component losses
-        self.ce_loss = None     # TODO
-        self.dice_loss = None   # TODO
+        self.ce_loss = None  # TODO
+        self.dice_loss = None  # TODO
         self.focal_loss = None  # TODO
         self.weights = weights
-        
+
     def forward(self, pred, target):
         # TODO Task 3.3: Compute weighted combination of losses
         total_loss = 0
-        
+
         # TODO: Add each loss component with its weight
-        
+
         return total_loss
 
 
 # ================== Training and Evaluation Functions ==================
+
 
 def calculate_iou(pred, target, threshold=0.5):
     """Calculate Intersection over Union"""
@@ -256,7 +263,7 @@ def calculate_iou(pred, target, threshold=0.5):
     # 1. Threshold predictions
     # 2. Calculate intersection and union
     # 3. Return IoU score
-    
+
     iou = None  # TODO
     return iou
 
@@ -266,19 +273,19 @@ def train_epoch(model, dataloader, optimizer, criterion, device):
     model.train()
     total_loss = 0
     total_iou = 0
-    
+
     # TODO: Complete training loop
-    for images, masks in tqdm(dataloader, desc='Training'):
+    for images, masks in tqdm(dataloader, desc="Training"):
         images, masks = images.to(device), masks.to(device)
-        
+
         # TODO: Forward pass
         # TODO: Calculate loss
         # TODO: Backward pass
         # TODO: Update weights
         # TODO: Calculate metrics
-        
+
         pass  # Remove this after implementation
-    
+
     return total_loss / len(dataloader), total_iou / len(dataloader)
 
 
@@ -287,85 +294,89 @@ def validate(model, dataloader, criterion, device):
     model.eval()
     total_loss = 0
     total_iou = 0
-    
+
     with torch.no_grad():
         # TODO: Complete validation loop
-        for images, masks in tqdm(dataloader, desc='Validation'):
+        for images, masks in tqdm(dataloader, desc="Validation"):
             images, masks = images.to(device), masks.to(device)
-            
+
             # TODO: Forward pass
             # TODO: Calculate loss and metrics
-            
+
             pass  # Remove this after implementation
-    
+
     return total_loss / len(dataloader), total_iou / len(dataloader)
 
 
 def visualize_predictions(model, dataloader, device, num_samples=4):
     """Visualize model predictions"""
     model.eval()
-    
+
     # TODO: Implement visualization
     # 1. Get a batch of images and masks
     # 2. Generate predictions
     # 3. Create subplot showing: input, ground truth, prediction
-    
+
     pass
 
 
 # ================== Main Training Script ==================
 
+
 def main():
     # Hyperparameters
     config = {
-        'batch_size': 16,
-        'learning_rate': 0.001,
-        'epochs': 50,
-        'image_size': 128,
-        'skip_mode': 'concat',  # Try: 'concat', 'add', 'attention'
+        "batch_size": 16,
+        "learning_rate": 0.001,
+        "epochs": 50,
+        "image_size": 128,
+        "skip_mode": "concat",  # Try: 'concat', 'add', 'attention'
     }
-    
+
     # TODO: Setup data transforms
-    transform = transforms.Compose([
-        # TODO: Add necessary transforms
-        # Resize, ToTensor, Normalize
-    ])
-    
+    transform = transforms.Compose(
+        [
+            # TODO: Add necessary transforms
+            # Resize, ToTensor, Normalize
+        ]
+    )
+
     # TODO: Load dataset
     # Use OxfordIIITPet or a simple synthetic dataset for testing
-    
+
     # TODO: Create data loaders
-    
+
     # TODO: Initialize model
     model = UNet(in_channels=3, out_channels=1).to(device)
-    
+
     # TODO: Setup optimizer and loss
     optimizer = None  # TODO
     criterion = None  # TODO
-    
+
     # Training loop
     train_losses = []
     val_losses = []
     train_ious = []
     val_ious = []
-    
+
     print("Starting training...")
-    for epoch in range(config['epochs']):
+    for epoch in range(config["epochs"]):
         # TODO: Train and validate
         # TODO: Save metrics
         # TODO: Print progress
         # TODO: Save best model
-        
+
         pass  # Remove after implementation
-    
+
     # TODO: Plot training curves
-    
+
     # TODO: Visualize final predictions
-    
+
     print("Training complete!")
 
 
 # ================== Analysis Functions ==================
+
 
 def analyze_skip_connections():
     """Compare different skip connection strategies"""
@@ -374,17 +385,17 @@ def analyze_skip_connections():
     # 2. Compare gradient flow
     # 3. Compare memory usage
     # 4. Compare final performance
-    
+
     results = {}
-    
+
     # TODO: Run experiments for each mode
-    for mode in ['concat', 'add', 'attention']:
+    for mode in ["concat", "add", "attention"]:
         # TODO: Train model
         # TODO: Collect metrics
         pass
-    
+
     # TODO: Create comparison table/plot
-    
+
     return results
 
 
@@ -392,18 +403,18 @@ def ablation_study():
     """Perform ablation study on U-Net components"""
     # TODO: Implement ablation study
     # Test: no skip connections, no batch norm, different depths
-    
+
     ablation_results = {}
-    
+
     # TODO: Run different configurations
-    
+
     return ablation_results
 
 
 if __name__ == "__main__":
     # Run main training
     main()
-    
+
     # Run analysis (optional)
     # analyze_skip_connections()
     # ablation_study()
