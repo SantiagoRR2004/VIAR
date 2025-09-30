@@ -10,7 +10,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset, DataLoader, random_split
 import torchvision.transforms as transforms
 from torchvision.datasets import OxfordIIITPet
 import numpy as np
@@ -18,12 +18,15 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 import warnings
 import Utils
+import os
 
 warnings.filterwarnings("ignore")
 
 # Set device
 device = torch.device(Utils.canUseGPU())
 print(f"Using device: {device}")
+
+currentDirectory = os.path.dirname(os.path.abspath(__file__))
 
 # ================== Part 1: U-Net Architecture ==================
 
@@ -356,25 +359,43 @@ def main():
         "skip_mode": "concat",  # Try: 'concat', 'add', 'attention'
     }
 
-    # TODO: Setup data transforms
+    # Setup data transforms
     transform = transforms.Compose(
         [
-            # TODO: Add necessary transforms
+            # Add necessary transforms
             # Resize, ToTensor, Normalize
+            transforms.Resize((config["image_size"], config["image_size"])),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
         ]
     )
 
-    # TODO: Load dataset
+    # Load dataset
     # Use OxfordIIITPet or a simple synthetic dataset for testing
+    dataset = OxfordIIITPet(
+        root=os.path.join(currentDirectory, "images"),
+        download=True,
+        transform=transform,
+    )
 
-    # TODO: Create data loaders
+    trainSize = int(0.8 * len(dataset))
+    valSize = len(dataset) - trainSize
+    trainDataset, valDataset = random_split(dataset, [trainSize, valSize])
+
+    # Create data loaders
+    trainLoader = DataLoader(
+        trainDataset, batch_size=config["batch_size"], shuffle=True, num_workers=2
+    )
+    valLoader = DataLoader(
+        valDataset, batch_size=config["batch_size"], shuffle=False, num_workers=2
+    )
 
     # TODO: Initialize model
     model = UNet(in_channels=3, out_channels=1).to(device)
 
-    # TODO: Setup optimizer and loss
-    optimizer = None  # TODO
-    criterion = None  # TODO
+    # Setup optimizer and loss
+    optimizer = optim.Adam(model.parameters(), lr=config["learning_rate"])
+    criterion = DiceLoss()
 
     # Training loop
     train_losses = []
@@ -386,10 +407,19 @@ def main():
     for epoch in range(config["epochs"]):
         # TODO: Train and validate
         # TODO: Save metrics
-        # TODO: Print progress
-        # TODO: Save best model
+        train_losses.append(train_loss)
+        val_losses.append(val_loss)
+        train_ious.append(train_iou)
+        val_ious.append(val_iou)
 
-        pass  # Remove after implementation
+        # TODO: Print progress
+        print(
+            f"Epoch [{epoch+1}/{config['epochs']}], "
+            f"Train Loss: {train_loss:.4f}, Train IoU: {train_iou:.4f}, "
+            f"Val Loss: {val_loss:.4f}, Val IoU: {val_iou:.4f}"
+        )
+
+        # TODO: Save best model
 
     # TODO: Plot training curves
 
