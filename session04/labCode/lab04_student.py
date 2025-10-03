@@ -313,12 +313,17 @@ class CombinedLoss(nn.Module):
 
 def calculate_iou(pred, target, threshold=0.5):
     """Calculate Intersection over Union"""
-    # TODO Task 3.4: Implement IoU calculation
+    # Task 3.4: Implement IoU calculation
     # 1. Threshold predictions
-    # 2. Calculate intersection and union
-    # 3. Return IoU score
+    pred = (pred > threshold).float()
 
-    iou = None  # TODO
+    # 2. Calculate intersection and union
+    intersection = (pred * target).sum()
+    union = pred.sum() + target.sum() - intersection
+
+    # 3. Return IoU score
+    iou = intersection / union if union > 0 else 0
+
     return iou
 
 
@@ -435,7 +440,7 @@ def main():
         valDataset, batch_size=config["batch_size"], shuffle=False, num_workers=2
     )
 
-    # TODO: Initialize model
+    # Initialize model
     model = UNet(in_channels=3, out_channels=1).to(device)
 
     # Setup optimizer and loss
