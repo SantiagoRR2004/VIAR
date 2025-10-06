@@ -326,17 +326,20 @@ class CombinedLoss(nn.Module):
 
     def __init__(self, weights={"ce": 0.5, "dice": 0.5, "focal": 0.0}):
         super().__init__()
-        # TODO Task 3.3: Initialize component losses
-        self.ce_loss = None  # TODO
-        self.dice_loss = None  # TODO
-        self.focal_loss = None  # TODO
+        # Task 3.3: Initialize component losses
+        self.ce_loss = nn.CrossEntropyLoss()
+        self.dice_loss = DiceLoss()
+        self.focal_loss = FocalLoss()
         self.weights = weights
 
     def forward(self, pred, target):
-        # TODO Task 3.3: Compute weighted combination of losses
+        # Task 3.3: Compute weighted combination of losses
         total_loss = 0
 
-        # TODO: Add each loss component with its weight
+        # Add each loss component with its weight
+        total_loss += self.weights.get("ce", 0) * self.ce_loss(pred, target)
+        total_loss += self.weights.get("dice", 0) * self.dice_loss(pred, target)
+        total_loss += self.weights.get("focal", 0) * self.focal_loss(pred, target)
 
         return total_loss
 
@@ -360,13 +363,13 @@ def calculate_iou(pred, target, threshold=0.5):
     return iou
 
 
-def train_epoch(model, dataloader, optimizer, criterion: nn.Module, device):
+def train_epoch(model, dataloader, optimizer, criterion: nn.Module, device) -> tuple:
     """Train for one epoch"""
     model.train()
     total_loss = 0
     total_iou = 0
 
-    # TODO: Complete training loop
+    # Complete training loop
     for images, masks in tqdm(dataloader, desc="Training"):
         images, masks = images.to(device), masks.to(device)
 
