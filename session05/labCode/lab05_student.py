@@ -29,9 +29,9 @@ print(f"Using device: {device}")
 # ================== Part 1: FCN Architecture ==================
 def make_bilinear_weights(kernel_size, num_channels):
     """Create weights for ConvTranspose2d to behave like bilinear upsampling.
-    
+
     Esto aplica la inicialización de He/Kaiming, que es una forma estándar de arrancar pesos en redes con ReLU.
-    En lugar de valores aleatorios cualquiera, distribuye los pesos según la 
+    En lugar de valores aleatorios cualquiera, distribuye los pesos según la
     varianza adecuada para que las activaciones ni exploten ni se apaguen.
     Esto ayuda a que la red empiece a aprender bien desde el primer paso.
     """
@@ -41,7 +41,7 @@ def make_bilinear_weights(kernel_size, num_channels):
     else:
         center = factor - 0.5
     og = torch.arange(kernel_size).unsqueeze(0)
-    filt = (1 - torch.abs(og - center)/factor)
+    filt = 1 - torch.abs(og - center) / factor
     weight = filt.t() * filt
     weight = weight / weight.sum()
     # Create a (out_c, in_c, k, k) tensor where each (c,c) has the kernel, others zero
@@ -49,6 +49,7 @@ def make_bilinear_weights(kernel_size, num_channels):
     for i in range(num_channels):
         w[i, i] = weight
     return w
+
 
 class FCN32s(nn.Module):
     """FCN without skip connections (baseline)"""
@@ -64,20 +65,23 @@ class FCN32s(nn.Module):
         resnet = models.resnet50(models.ResNet50_Weights.IMAGENET1K_V2)
         # remove the last 2 layers
         self.backbone = nn.Sequential(*list(resnet.children())[:-2])
-        
+
         # TODO Task 1.2: Add score layer
         # 1. Create 1x1 convolution: nn.Conv2d(2048, n_classes, kernel_size=1)
         self.conv1x1 = nn.Conv2d(2048, n_classes, kernel_size=1)
 
-
         # TODO Task 1.3: Add upsampling layer
         # 1. Create transposed convolution for 32x upsampling
         # 2. Use nn.ConvTranspose2d(n_classes, n_classes, kernel_size=64, stride=32, bias=False)
-        self.upsample32x = nn.ConvTranspose2d(n_classes, n_classes, kernel_size=64, stride=32, bias=False)
-        
+        self.upsample32x = nn.ConvTranspose2d(
+            n_classes, n_classes, kernel_size=64, stride=32, bias=False
+        )
+
         if kaiming_weight_init:
             # Initialize the score conv (kaiming) and upsample to bilinear init
-            nn.init.kaiming_normal_(self.score.weight, mode='fan_out', nonlinearity='relu')
+            nn.init.kaiming_normal_(
+                self.score.weight, mode="fan_out", nonlinearity="relu"
+            )
             if self.score.bias is not None:
                 nn.init.constant_(self.score.bias, 0)
 
@@ -85,7 +89,6 @@ class FCN32s(nn.Module):
             with torch.no_grad():
                 w = make_bilinear_weights(64, n_classes)
                 self.upsample32.weight.copy_(w)
-
 
     def forward(self, x):
         # TODO Task 1.4: Implement forward pass
