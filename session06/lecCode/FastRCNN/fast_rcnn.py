@@ -17,6 +17,7 @@ import time
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from typing import List, Tuple, Dict
+import Utils
 
 
 class RoIPooling(nn.Module):
@@ -514,7 +515,7 @@ def demo_fast_rcnn():
 
     # Initialize model
     print("\n2. Initializing Fast R-CNN...")
-    device = "cuda" if torch.cuda.is_available() else "cpu"
+    device = Utils.canUseGPU()
     model = FastRCNN(num_classes=3)
     trainer = FastRCNNTrainer(model, num_classes=3, device=device)
     print(f"   Device: {device}")

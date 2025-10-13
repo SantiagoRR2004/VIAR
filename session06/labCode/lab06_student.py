@@ -27,6 +27,7 @@ import matplotlib.patches as patches
 from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
 from tqdm import tqdm
+import Utils
 
 # ============================================================================
 # CONFIGURATION
@@ -61,7 +62,7 @@ class Config:
     learning_rate = 1e-4
     weight_decay = 5e-4
     num_workers = 4
-    device = "cuda" if torch.cuda.is_available() else "cpu"
+    device = Utils.canUseGPU()
 
     # Loss weights
     lambda_coord = 5.0

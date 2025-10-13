@@ -14,7 +14,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from typing import List, Tuple, Dict
-
+import Utils
 
 # ============================================================================
 # YOLO MODEL
@@ -434,7 +434,7 @@ class SyntheticObjectDataset(Dataset):
 def train_yolo(num_epochs=20, batch_size=16, learning_rate=1e-3):
     """Train YOLO on synthetic dataset"""
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device(Utils.canUseGPU())
     print(f"Using device: {device}\n")
 
     # Create dataset and dataloader

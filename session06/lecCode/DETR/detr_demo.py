@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from scipy.optimize import linear_sum_assignment
 from typing import List, Tuple, Dict
+import Utils
 
 
 # ============================================================================
@@ -561,7 +562,7 @@ def collate_fn(batch):
 
 
 def train_detr(num_epochs=50, batch_size=8, learning_rate=1e-4):
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device(Utils.canUseGPU())
     print(f"Using device: {device}\n")
 
     # Dataset

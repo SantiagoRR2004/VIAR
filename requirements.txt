@@ -47,3 +47,4 @@ einops>=0.4.0  # For tensor operations
 timm>=0.6.0  # Optional: pretrained models for comparison
 
 prettytable
+pycocotools

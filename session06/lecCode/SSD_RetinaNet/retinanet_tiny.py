@@ -9,6 +9,7 @@ RetinaNet (Simplified) — Tiny, educational implementation for synthetic shapes
 import torch, torch.nn as nn, torch.nn.functional as F, torch.optim as optim
 from torch.utils.data import Dataset, DataLoader
 import numpy as np, matplotlib.pyplot as plt, matplotlib.patches as patches
+import Utils
 
 
 # ---- reuse the same ShapesDataset as in SSD (paste if running standalone) ----
@@ -355,9 +356,7 @@ def visualize_sample(model, ds):
 
 
 # ---- Train ----
-def train_retina(
-    epochs=10, bs=16, lr=1e-3, device="cuda" if torch.cuda.is_available() else "cpu"
-):
+def train_retina(epochs=10, bs=16, lr=1e-3, device=Utils.canUseGPU()):
     ds = ShapesDataset(n=800)
     dl = DataLoader(ds, batch_size=bs, shuffle=True, collate_fn=lambda b: list(zip(*b)))
     model = RetinaTiny(num_classes=3).to(device)

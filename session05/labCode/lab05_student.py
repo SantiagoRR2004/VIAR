@@ -18,11 +18,12 @@ from PIL import Image
 import cv2
 from tqdm import tqdm
 import warnings
+import Utils
 
 warnings.filterwarnings("ignore")
 
 # Set device
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = torch.device(Utils.canUseGPU())
 print(f"Using device: {device}")
 
 

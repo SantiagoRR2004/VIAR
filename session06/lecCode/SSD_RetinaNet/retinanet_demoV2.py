@@ -28,6 +28,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from typing import List, Tuple
+import Utils
 
 
 # ============================================================================
@@ -704,7 +705,7 @@ def plot_training_curves(history):
 
 def train_retinanet(num_epochs=20, batch_size=16, learning_rate=1e-3):
     """Train RetinaNet on synthetic dataset"""
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device(Utils.canUseGPU())
     print(f"Using device: {device}\n")
 
     # Create dataset and dataloader
