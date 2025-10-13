@@ -45,3 +45,5 @@ sphinx>=4.0.0  # Optional: for documentation generation
 scikit-learn>=1.0.0  # For additional metrics
 einops>=0.4.0  # For tensor operations
 timm>=0.6.0  # Optional: pretrained models for comparison
+
+prettytable

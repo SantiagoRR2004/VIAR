@@ -16,6 +16,8 @@ from torchvision.datasets import OxfordIIITPet
 import numpy as np
 import matplotlib.pyplot as plt
 from tqdm import tqdm
+import time
+from prettytable import PrettyTable
 import warnings
 import sys
 import os
@@ -244,13 +246,18 @@ class FlexibleSkipConnection(nn.Module):
         if mode == "concat":
             # Task 2.1: Setup for concatenation
             # Output conv to handle concatenated channels
+
+            # Concat features from decoder and skip (encoder)
+            # Preserve all information, higher computational cost
+            # Use a conv layer 3 x 3 to reduce channels back to decoder_channels
             self.conv = nn.Conv2d(
                 decoder_channels + skip_channels, decoder_channels, 3, padding=1
             )
 
         elif mode == "add":
             # Task 2.2: Setup for addition
-            # May need 1x1 conv to match channels
+            # May need 1x1 conv to match channels; to cast skip to decoder channels
+            # Element-wise addition, lower computational cost, may lose some information
             self.proj = (
                 nn.Conv2d(skip_channels, decoder_channels, 1)
                 if skip_channels != decoder_channels
@@ -444,27 +451,69 @@ def visualize_predictions(model, dataloader, device, num_samples=4):
     """Visualize model predictions"""
     model.eval()
 
-    # TODO: Implement visualization
+    # Implement visualization
     # 1. Get a batch of images and masks
     # 2. Generate predictions
     # 3. Create subplot showing: input, ground truth, prediction
 
-    pass
+    for i in range(num_samples):
+        images, masks = next(iter(dataloader))
+        images, masks = images.to(device), masks.to(device)
+
+        with torch.no_grad():
+            outputs = model(images)
+            preds = torch.sigmoid(outputs) > 0.5
+
+        # Plotting
+        plt.figure(figsize=(12, 4))
+        for j in range(min(4, images.size(0))):
+            plt.subplot(3, 4, j + 1)
+            plt.imshow(images[j].cpu().permute(1, 2, 0) * 0.5 + 0.5)
+            plt.title("Input Image")
+            plt.axis("off")
+
+            plt.subplot(3, 4, j + 5)
+            plt.imshow(masks[j].cpu().squeeze(), cmap="gray")
+            plt.title("Ground Truth")
+            plt.axis("off")
+
+            plt.subplot(3, 4, j + 9)
+            plt.imshow(preds[j].cpu().squeeze(), cmap="gray")
+            plt.title("Prediction")
+            plt.axis("off")
+
+        plt.tight_layout()
+        plt.show()
 
 
-# ================== Main Training Script ==================
+def plot_training_curves(train_losses, val_losses, train_ious, val_ious):
+    """Plot training and validation curves"""
+    epochs = range(1, len(train_losses) + 1)
+
+    plt.figure(figsize=(12, 5))
+
+    plt.subplot(1, 2, 1)
+    plt.plot(epochs, train_losses, label="Train Loss")
+    plt.plot(epochs, val_losses, label="Val Loss")
+    plt.xlabel("Epochs")
+    plt.ylabel("Loss")
+    plt.title("Training and Validation Loss")
+    plt.legend()
+
+    plt.subplot(1, 2, 2)
+    plt.plot(epochs, train_ious, label="Train IoU")
+    plt.plot(epochs, val_ious, label="Val IoU")
+    plt.xlabel("Epochs")
+    plt.ylabel("IoU")
+    plt.title("Training and Validation IoU")
+    plt.legend()
+
+    plt.tight_layout()
+    plt.show()
 
 
-def main():
-    # Hyperparameters
-    config = {
-        "batch_size": 16,
-        "learning_rate": 0.001,
-        "epochs": 50,
-        "image_size": 128,
-        "skip_mode": "concat",  # Try: 'concat', 'add', 'attention'
-    }
-
+def get_dataloaders(config: dict):
+    """Prepare data loaders for training and validation"""
     # Setup data transforms
     imageTransform = transforms.Compose(
         [
@@ -504,50 +553,89 @@ def main():
         valDataset, batch_size=config["batch_size"], shuffle=False, num_workers=2
     )
 
+    return trainLoader, valLoader
+
+
+# ================== Main Training Script ==================
+
+
+def main():
+    # Hyperparameters
+    config = {
+        "batch_size": 16,
+        "learning_rate": 0.001,
+        "epochs": 50,
+        "image_size": 128,
+        "skip_mode": "concat",  # Try: 'concat', 'add', 'attention'
+    }
+    # Get data loaders
+    trainLoader, valLoader = get_dataloaders(config)
+
     # Initialize model
-    model = UNet(in_channels=3, out_channels=1, skipMode=config["skip_mode"]).to(device)
+    # if we have best_unet_model.pth use it instead training:
+    if os.path.exists("best_unet_model.pth"):
+        model = UNet(in_channels=3, out_channels=1, skipMode=config["skip_mode"])
+        model.load_state_dict(torch.load("best_unet_model.pth"))
+        if os.path.exists("train_losses.npy"):
+            train_losses = np.load("train_losses.npy")
+            val_losses = np.load("val_losses.npy")
+            train_ious = np.load("train_ious.npy")
+            val_ious = np.load("val_ious.npy")
 
-    # Setup optimizer and loss
-    optimizer = optim.Adam(model.parameters(), lr=config["learning_rate"])
-    criterion = DiceLoss()
-
-    # Training loop
-    train_losses = []
-    val_losses = []
-    train_ious = []
-    val_ious = []
-    best_iou = 0.0
-
-    print("Starting training...")
-    for epoch in range(config["epochs"]):
-        # Train and validate
-        train_loss, train_iou = train_epoch(
-            model, trainLoader, optimizer, criterion, device
-        )
-        val_loss, val_iou = validate(model, valLoader, criterion, device)
-
-        # Save metrics
-        train_losses.append(train_loss)
-        val_losses.append(val_loss)
-        train_ious.append(train_iou)
-        val_ious.append(val_iou)
-
-        # Print progress
-        print(
-            f"Epoch [{epoch+1}/{config['epochs']}], "
-            f"Train Loss: {train_loss:.4f}, Train IoU: {train_iou:.4f}, "
-            f"Val Loss: {val_loss:.4f}, Val IoU: {val_iou:.4f}"
+    else:
+        model = UNet(in_channels=3, out_channels=1, skipMode=config["skip_mode"]).to(
+            device
         )
 
-        # Save best model
-        if val_iou > best_iou:
-            best_iou = val_iou
-            torch.save(model.state_dict(), "best_unet_model.pth")
-            print("Best model saved!")
+        # Setup optimizer and loss
+        optimizer = optim.Adam(model.parameters(), lr=config["learning_rate"])
+        criterion = DiceLoss()
 
-    # TODO: Plot training curves
+        # Training loop
+        train_losses = []
+        val_losses = []
+        train_ious = []
+        val_ious = []
+        best_iou = 0.0
 
-    # TODO: Visualize final predictions
+        print("Starting training...")
+        for epoch in range(config["epochs"]):
+            # Train and validate
+            train_loss, train_iou = train_epoch(
+                model, trainLoader, optimizer, criterion, device
+            )
+            train_iou = train_iou.cpu()
+            val_loss, val_iou = validate(model, valLoader, criterion, device)
+            val_iou = val_iou.cpu()
+
+            # Save metrics
+            train_losses.append(train_loss)
+            val_losses.append(val_loss)
+            train_ious.append(train_iou)
+            val_ious.append(val_iou)
+
+            # Print progress
+            print(
+                f"Epoch [{epoch+1}/{config['epochs']}], "
+                f"Train Loss: {train_loss:.4f}, Train IoU: {train_iou:.4f}, "
+                f"Val Loss: {val_loss:.4f}, Val IoU: {val_iou:.4f}"
+            )
+
+            # Save best model
+            if val_iou > best_iou:
+                best_iou = val_iou
+                torch.save(model.state_dict(), "best_unet_model.pth")
+                print("Best model saved!")
+        np.save("train_losses.npy", np.array(train_losses))
+        np.save("val_losses.npy", np.array(val_losses))
+        np.save("train_ious.npy", np.array(train_ious))
+        np.save("val_ious.npy", np.array(val_ious))
+
+    # Plot training curves
+    plot_training_curves(train_losses, val_losses, train_ious, val_ious)
+
+    # Visualize final predictions
+    visualize_predictions(model, valLoader, device)
 
     print("Training complete!")
 
@@ -557,7 +645,7 @@ def main():
 
 def analyze_skip_connections():
     """Compare different skip connection strategies"""
-    # TODO Task 2.4: Implement comparison
+    # Task 2.4: Implement comparison
     # 1. Train models with different skip modes
     # 2. Compare gradient flow
     # 3. Compare memory usage
@@ -565,13 +653,114 @@ def analyze_skip_connections():
 
     results = {}
 
-    # TODO: Run experiments for each mode
-    for mode in ["concat", "add", "attention"]:
-        # TODO: Train model
-        # TODO: Collect metrics
-        pass
+    config = {
+        "batch_size": 16,
+        "learning_rate": 0.001,
+        "epochs": 20,
+        "image_size": 128,
+    }
 
-    # TODO: Create comparison table/plot
+    trainLoader, valLoader = get_dataloaders(config)
+
+    criterion = DiceLoss()
+
+    # Run experiments for each mode
+    for mode in ["concat", "add", "attention"]:
+        print("*" * 50)
+        print(f"Training with skip mode: {mode}")
+        print("*" * 50)
+        model = UNet(in_channels=3, out_channels=1, skipMode=mode).to(device)
+        optimizer = optim.Adam(model.parameters(), lr=config["learning_rate"])
+        # Initialize metrics storage
+        train_losses = []
+        val_losses = []
+        train_ious = []
+        val_ious = []
+        training_time = 0
+
+        start_time = time.time()
+
+        # Train model
+        for epoch in range(config["epochs"]):
+            train_loss, train_iou = train_epoch(
+                model, trainLoader, optimizer, criterion, device
+            )
+            val_loss, val_iou = validate(model, valLoader, criterion, device)
+
+            train_losses.append(train_loss)
+            val_losses.append(val_loss)
+            train_ious.append(train_iou)
+            val_ious.append(val_iou)
+
+            print(
+                f"Epoch {epoch+1} "
+                f"Train Loss: {train_loss:.4f}, Train IoU: {train_iou:.4f}, "
+                f"Val Loss: {val_loss:.4f}, Val IoU: {val_iou:.4f}"
+            )
+        training_time = time.time() - start_time
+        print(f"Training time: {training_time:.2f} seconds")
+
+        # Collect gradient flow and memory usage
+        gradient_norms = {}
+        model.train()
+        images, masks = next(iter(trainLoader))
+        images, masks = images.to(device), masks.to(device)
+
+        optimizer.zero_grad()
+        outputs = model(images)
+        loss = criterion(outputs, masks)
+        loss.backward()
+
+        # Collect gradient norms
+        for name, param in model.named_parameters():
+            if param.grad is not None:
+                gradient_norms[name] = param.grad.norm().item()
+
+        avg_gradient = np.mean(list(gradient_norms.values()))
+
+        # Memory usage
+        if torch.cuda.is_available():
+            torch.cuda.reset_peak_memory_stats()
+            model.eval()
+            with torch.no_grad():
+                _ = model(images)
+            memory_usage = torch.cuda.max_memory_allocated() / 1024**2  # MB
+        else:
+            memory_usage = 0.0
+
+        # Collect metrics
+        results[mode] = {
+            "train_losses": train_losses,
+            "val_losses": val_losses,
+            "train_ious": train_ious,
+            "val_ious": val_ious,
+            "avg_gradient": avg_gradient,
+            "memory_usage": memory_usage,
+            "training_time": training_time,
+        }
+
+    # Create comparison table/plot
+    table = PrettyTable()
+    table.field_names = [
+        "Skip Mode",
+        "Final Val Losses",
+        "Final Val IoU",
+        "Avg Gradient Norm",
+        "Memory Usage (MB)",
+        "Training Time (s)",
+    ]
+    for mode, metrics in results.items():
+        table.add_row(
+            [
+                mode,
+                metrics["val_losses"][-1],
+                metrics["val_ious"][-1],
+                metrics["avg_gradient"],
+                metrics["memory_usage"],
+                metrics["training_time"],
+            ]
+        )
+    print(table)
 
     return results
 
