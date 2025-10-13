@@ -30,13 +30,16 @@ def iou_xyxy(a, b):
 
     for i in range(N):
         ax1, ay1, ax2, ay2 = a[i]
-        aw = max(0.0, ax2 - ax1); ah = max(0.0, ay2 - ay1)
+        aw = max(0.0, ax2 - ax1)
+        ah = max(0.0, ay2 - ay1)
         aarea = aw * ah
         for j in range(M):
             bx1, by1, bx2, by2 = b[j]
             # intersection
-            inter_x1 = max(ax1, bx1); inter_y1 = max(ay1, by1)
-            inter_x2 = min(ax2, bx2); inter_y2 = min(ay2, by2)
+            inter_x1 = max(ax1, bx1)
+            inter_y1 = max(ay1, by1)
+            inter_x2 = min(ax2, bx2)
+            inter_y2 = min(ay2, by2)
             iw = max(0.0, inter_x2 - inter_x1)
             ih = max(0.0, inter_y2 - inter_y1)
             inter = iw * ih
@@ -56,8 +59,10 @@ def nms_iou(boxes, scores, iou_thresh=0.5, topk=None):
         return []
     boxes = np.asarray(boxes, dtype=np.float32)
     scores = np.asarray(scores, dtype=np.float32)
-    x1 = boxes[:, 0]; y1 = boxes[:, 1]
-    x2 = boxes[:, 2]; y2 = boxes[:, 3]
+    x1 = boxes[:, 0]
+    y1 = boxes[:, 1]
+    x2 = boxes[:, 2]
+    y2 = boxes[:, 3]
     areas = np.maximum(0.0, x2 - x1) * np.maximum(0.0, y2 - y1)
 
     order = scores.argsort()[::-1]
@@ -81,7 +86,9 @@ def nms_iou(boxes, scores, iou_thresh=0.5, topk=None):
     return keep
 
 
-def draw_yolo_grid(ax, image_size=(224, 224), S=14, color='k', alpha=0.25, lw=0.8, mark_centers=True):
+def draw_yolo_grid(
+    ax, image_size=(224, 224), S=14, color="k", alpha=0.25, lw=0.8, mark_centers=True
+):
     H, W = image_size
     cell_w, cell_h = W / S, H / S
     # Vertical grid lines
@@ -98,7 +105,7 @@ def draw_yolo_grid(ax, image_size=(224, 224), S=14, color='k', alpha=0.25, lw=0.
             for j in range(S):
                 cx = j * cell_w + cell_w / 2
                 cy = i * cell_h + cell_h / 2
-                ax.plot(cx, cy, 'k.', alpha=0.2, markersize=3)
+                ax.plot(cx, cy, "k.", alpha=0.2, markersize=3)
 
 
 def print_parametrization_explainer():
@@ -148,11 +155,13 @@ class AnchorGenerator:
         base_anchors = []
         for scale in self.scales:
             for ratio in self.aspect_ratios:
-                area = scale ** 2
+                area = scale**2
                 w = np.sqrt(area / ratio)
                 h = w * ratio
-                x1 = -w / 2; y1 = -h / 2
-                x2 = +w / 2; y2 = +h / 2
+                x1 = -w / 2
+                y1 = -h / 2
+                x2 = +w / 2
+                y2 = +h / 2
                 base_anchors.append([x1, y1, x2, y2])
         return np.array(base_anchors, dtype=np.float32)
 
@@ -172,7 +181,7 @@ class AnchorGenerator:
                 cx = j * self.stride + self.stride / 2
                 cy = i * self.stride + self.stride / 2
                 shifts = base_anchors + np.array([cx, cy, cx, cy], dtype=np.float32)
-                all_anchors[idx:idx + A] = shifts
+                all_anchors[idx : idx + A] = shifts
                 idx += A
 
         # Clip to image boundaries
@@ -194,29 +203,41 @@ class AnchorGenerator:
 
         for i, (anchor, color) in enumerate(zip(base_anchors, colors)):
             x1, y1, x2, y2 = anchor
-            w = x2 - x1; h = y2 - y1
-            rect = Rectangle((x1, y1), w, h, linewidth=2,
-                             edgecolor=color, facecolor='none')
+            w = x2 - x1
+            h = y2 - y1
+            rect = Rectangle(
+                (x1, y1), w, h, linewidth=2, edgecolor=color, facecolor="none"
+            )
             ax.add_patch(rect)
             scale_idx = i // len(self.aspect_ratios)
             ratio_idx = i % len(self.aspect_ratios)
-            label = f'S={self.scales[scale_idx]}, R={self.aspect_ratios[ratio_idx]:.1f}'
-            ax.text(x2 + 2, y1, label, fontsize=9, color=color, fontweight='bold')
+            label = f"S={self.scales[scale_idx]}, R={self.aspect_ratios[ratio_idx]:.1f}"
+            ax.text(x2 + 2, y1, label, fontsize=9, color=color, fontweight="bold")
 
-        ax.plot(0, 0, 'r*', markersize=20, label='Anchor center')
-        ax.set_xlim(-60, 60); ax.set_ylim(-60, 60); ax.set_aspect('equal')
-        ax.grid(True, alpha=0.3); ax.axhline(0, color='k', linewidth=1); ax.axvline(0, color='k', linewidth=1)
-        ax.legend(loc='upper right')
-        ax.set_title(f'Base Anchors: {len(self.scales)} scales × {len(self.aspect_ratios)} ratios = {self.num_anchors} anchors/location',
-                     fontsize=13, fontweight='bold')
-        ax.set_xlabel('Width (px)'); ax.set_ylabel('Height (px)')
+        ax.plot(0, 0, "r*", markersize=20, label="Anchor center")
+        ax.set_xlim(-60, 60)
+        ax.set_ylim(-60, 60)
+        ax.set_aspect("equal")
+        ax.grid(True, alpha=0.3)
+        ax.axhline(0, color="k", linewidth=1)
+        ax.axvline(0, color="k", linewidth=1)
+        ax.legend(loc="upper right")
+        ax.set_title(
+            f"Base Anchors: {len(self.scales)} scales × {len(self.aspect_ratios)} ratios = {self.num_anchors} anchors/location",
+            fontsize=13,
+            fontweight="bold",
+        )
+        ax.set_xlabel("Width (px)")
+        ax.set_ylabel("Height (px)")
         plt.tight_layout()
-        plt.savefig('base_anchors.pdf', dpi=200, bbox_inches='tight')
-        plt.savefig('base_anchors.png', dpi=200, bbox_inches='tight')
+        plt.savefig("base_anchors.pdf", dpi=200, bbox_inches="tight")
+        plt.savefig("base_anchors.png", dpi=200, bbox_inches="tight")
         print("Saved: base_anchors.pdf/.png")
         plt.show()
 
-    def visualize_anchors_on_image(self, image_size=(224, 224), feature_map_size=(14, 14)):
+    def visualize_anchors_on_image(
+        self, image_size=(224, 224), feature_map_size=(14, 14)
+    ):
         """Visualize anchors tiled across an image + YOLO grid overlay."""
         anchors = self.generate_anchors(feature_map_size, image_size)
 
@@ -224,61 +245,100 @@ class AnchorGenerator:
 
         # Panel 1: All anchors at one center
         ax = axes[0]
-        ax.set_xlim(0, image_size[1]); ax.set_ylim(image_size[0], 0)
-        ax.add_patch(Rectangle((0, 0), image_size[1], image_size[0],
-                               facecolor='lightgray', alpha=0.3))
+        ax.set_xlim(0, image_size[1])
+        ax.set_ylim(image_size[0], 0)
+        ax.add_patch(
+            Rectangle(
+                (0, 0), image_size[1], image_size[0], facecolor="lightgray", alpha=0.3
+            )
+        )
 
         # Overlay YOLO grid (same lattice as feature map)
-        draw_yolo_grid(ax, image_size=image_size, S=feature_map_size[0], color='k', alpha=0.25)
+        draw_yolo_grid(
+            ax, image_size=image_size, S=feature_map_size[0], color="k", alpha=0.25
+        )
 
         Hf, Wf = feature_map_size
         A = self.num_anchors
-        ci = Hf // 2; cj = Wf // 2
+        ci = Hf // 2
+        cj = Wf // 2
         start_idx = (ci * Wf + cj) * A
         colors = plt.cm.Set3(np.linspace(0, 1, A))
         for i in range(A):
             x1, y1, x2, y2 = anchors[start_idx + i]
-            rect = Rectangle((x1, y1), x2 - x1, y2 - y1, linewidth=2,
-                             edgecolor=colors[i], facecolor='none')
+            rect = Rectangle(
+                (x1, y1),
+                x2 - x1,
+                y2 - y1,
+                linewidth=2,
+                edgecolor=colors[i],
+                facecolor="none",
+            )
             ax.add_patch(rect)
 
         cx = cj * self.stride + self.stride / 2
         cy = ci * self.stride + self.stride / 2
-        ax.plot(cx, cy, 'r*', markersize=15)
-        ax.set_title(f'{A} Anchors at One Lattice Location\n(stride={self.stride})', fontsize=13, fontweight='bold')
-        ax.set_xlabel('X (px)'); ax.set_ylabel('Y (px)'); ax.grid(True, alpha=0.3)
+        ax.plot(cx, cy, "r*", markersize=15)
+        ax.set_title(
+            f"{A} Anchors at One Lattice Location\n(stride={self.stride})",
+            fontsize=13,
+            fontweight="bold",
+        )
+        ax.set_xlabel("X (px)")
+        ax.set_ylabel("Y (px)")
+        ax.grid(True, alpha=0.3)
 
         # Panel 2: Sample anchors across image
         ax = axes[1]
-        ax.set_xlim(0, image_size[1]); ax.set_ylim(image_size[0], 0)
-        ax.add_patch(Rectangle((0, 0), image_size[1], image_size[0],
-                               facecolor='lightgray', alpha=0.3))
-        draw_yolo_grid(ax, image_size=image_size, S=Hf, color='k', alpha=0.25)
+        ax.set_xlim(0, image_size[1])
+        ax.set_ylim(image_size[0], 0)
+        ax.add_patch(
+            Rectangle(
+                (0, 0), image_size[1], image_size[0], facecolor="lightgray", alpha=0.3
+            )
+        )
+        draw_yolo_grid(ax, image_size=image_size, S=Hf, color="k", alpha=0.25)
 
         # Plot lattice centers
         for i in range(Hf):
             for j in range(Wf):
                 cx = j * self.stride + self.stride / 2
                 cy = i * self.stride + self.stride / 2
-                ax.plot(cx, cy, 'b.', markersize=6, alpha=0.6)
+                ax.plot(cx, cy, "b.", markersize=6, alpha=0.6)
 
         # Draw one sample anchor per 2×2 positions: largest scale, ratio=1
-        sample_anchor_idx = len(self.aspect_ratios) * (len(self.scales) - 1) + 1  # largest scale, ratio=1
+        sample_anchor_idx = (
+            len(self.aspect_ratios) * (len(self.scales) - 1) + 1
+        )  # largest scale, ratio=1
         for i in range(0, Hf, 2):
             for j in range(0, Wf, 2):
                 idx = (i * Wf + j) * A + sample_anchor_idx
                 if idx < len(anchors):
                     x1, y1, x2, y2 = anchors[idx]
-                    ax.add_patch(Rectangle((x1, y1), x2 - x1, y2 - y1, linewidth=1,
-                                           edgecolor='red', facecolor='none', alpha=0.5))
+                    ax.add_patch(
+                        Rectangle(
+                            (x1, y1),
+                            x2 - x1,
+                            y2 - y1,
+                            linewidth=1,
+                            edgecolor="red",
+                            facecolor="none",
+                            alpha=0.5,
+                        )
+                    )
 
-        ax.set_title(f'Anchors Tiled Across Image\n({Hf}×{Wf} positions, stride={self.stride})',
-                     fontsize=13, fontweight='bold')
-        ax.set_xlabel('X (px)'); ax.set_ylabel('Y (px)'); ax.grid(True, alpha=0.3)
+        ax.set_title(
+            f"Anchors Tiled Across Image\n({Hf}×{Wf} positions, stride={self.stride})",
+            fontsize=13,
+            fontweight="bold",
+        )
+        ax.set_xlabel("X (px)")
+        ax.set_ylabel("Y (px)")
+        ax.grid(True, alpha=0.3)
 
         plt.tight_layout()
-        plt.savefig('anchors_on_image.pdf', dpi=200, bbox_inches='tight')
-        plt.savefig('anchors_on_image.png', dpi=200, bbox_inches='tight')
+        plt.savefig("anchors_on_image.pdf", dpi=200, bbox_inches="tight")
+        plt.savefig("anchors_on_image.png", dpi=200, bbox_inches="tight")
         print("Saved: anchors_on_image.pdf/.png")
         plt.show()
 
@@ -291,8 +351,13 @@ class AnchorGenerator:
         print(f"  Scales: {self.scales}")
         print(f"  Aspect ratios: {self.aspect_ratios}")
 
-    def visualize_assignment(self, image_size=(224, 224), feature_map_size=(14, 14),
-                             gt_box=(60, 60, 160, 170), iou_vis_thresh=0.5):
+    def visualize_assignment(
+        self,
+        image_size=(224, 224),
+        feature_map_size=(14, 14),
+        gt_box=(60, 60, 160, 170),
+        iou_vis_thresh=0.5,
+    ):
         """
         Visualize GT→anchor assignment:
           • IoU heat at lattice centers (max IoU over anchors at each location)
@@ -311,9 +376,14 @@ class AnchorGenerator:
         best_anchor = anchors[best_idx]
 
         fig, ax = plt.subplots(1, 1, figsize=(8, 8))
-        ax.set_xlim(0, image_size[1]); ax.set_ylim(image_size[0], 0)
-        ax.add_patch(Rectangle((0, 0), image_size[1], image_size[0], facecolor='lightgray', alpha=0.2))
-        draw_yolo_grid(ax, image_size=image_size, S=Hf, color='k', alpha=0.25)
+        ax.set_xlim(0, image_size[1])
+        ax.set_ylim(image_size[0], 0)
+        ax.add_patch(
+            Rectangle(
+                (0, 0), image_size[1], image_size[0], facecolor="lightgray", alpha=0.2
+            )
+        )
+        draw_yolo_grid(ax, image_size=image_size, S=Hf, color="k", alpha=0.25)
 
         # IoU heat as colored dots at centers
         for i in range(Hf):
@@ -321,73 +391,122 @@ class AnchorGenerator:
                 cx = j * self.stride + self.stride / 2
                 cy = i * self.stride + self.stride / 2
                 c = plt.cm.viridis(iou_loc[i, j])
-                ax.plot(cx, cy, 'o', color=c, markersize=6, alpha=0.95)
+                ax.plot(cx, cy, "o", color=c, markersize=6, alpha=0.95)
 
         # Draw GT
         x1, y1, x2, y2 = gt_box
-        ax.add_patch(Rectangle((x1, y1), x2 - x1, y2 - y1, edgecolor='magenta',
-                               facecolor='none', linewidth=2))
-        ax.text(x1, y1 - 5, 'GT', color='magenta', fontsize=10, fontweight='bold')
+        ax.add_patch(
+            Rectangle(
+                (x1, y1),
+                x2 - x1,
+                y2 - y1,
+                edgecolor="magenta",
+                facecolor="none",
+                linewidth=2,
+            )
+        )
+        ax.text(x1, y1 - 5, "GT", color="magenta", fontsize=10, fontweight="bold")
 
         # Best anchor
         bx1, by1, bx2, by2 = best_anchor
-        ax.add_patch(Rectangle((bx1, by1), bx2 - bx1, by2 - by1, edgecolor='lime',
-                               facecolor='none', linewidth=2))
-        ax.text(bx1, by1 - 5, f'Best IoU={ious[best_idx]:.2f}', color='lime',
-                fontsize=10, fontweight='bold')
+        ax.add_patch(
+            Rectangle(
+                (bx1, by1),
+                bx2 - bx1,
+                by2 - by1,
+                edgecolor="lime",
+                facecolor="none",
+                linewidth=2,
+            )
+        )
+        ax.text(
+            bx1,
+            by1 - 5,
+            f"Best IoU={ious[best_idx]:.2f}",
+            color="lime",
+            fontsize=10,
+            fontweight="bold",
+        )
 
         # All anchors above threshold (thin red)
         high = np.where(ious >= iou_vis_thresh)[0]
         for idx in high[:300]:  # cap to keep the plot readable
             x1, y1, x2, y2 = anchors[idx]
-            ax.add_patch(Rectangle((x1, y1), x2 - x1, y2 - y1, edgecolor='red',
-                                   facecolor='none', linewidth=1, alpha=0.35))
+            ax.add_patch(
+                Rectangle(
+                    (x1, y1),
+                    x2 - x1,
+                    y2 - y1,
+                    edgecolor="red",
+                    facecolor="none",
+                    linewidth=1,
+                    alpha=0.35,
+                )
+            )
 
-        ax.set_title('GT→Anchor Assignment (IoU heat at centers; best anchor in lime)')
+        ax.set_title("GT→Anchor Assignment (IoU heat at centers; best anchor in lime)")
         ax.grid(True, alpha=0.3)
         plt.tight_layout()
-        plt.savefig('anchor_assignment.png', dpi=200, bbox_inches='tight')
+        plt.savefig("anchor_assignment.png", dpi=200, bbox_inches="tight")
         print("Saved: anchor_assignment.png")
         plt.show()
 
         return anchors, ious
 
-    def micro_nms_demo(self, anchors, scores, image_size=(224, 224), iou_thresh=0.5, topk=200):
+    def micro_nms_demo(
+        self, anchors, scores, image_size=(224, 224), iou_thresh=0.5, topk=200
+    ):
         """
         Run micro-NMS on provided scores (e.g., IoU with a GT) and visualize reduction.
         """
         keep = nms_iou(anchors, scores, iou_thresh=iou_thresh, topk=topk)
 
         fig, axes = plt.subplots(1, 2, figsize=(14, 6))
-        titles = [f'Pre-NMS (N={len(anchors)})', f'Post-NMS (kept={len(keep)})']
+        titles = [f"Pre-NMS (N={len(anchors)})", f"Post-NMS (kept={len(keep)})"]
 
         for ax, show_keep in zip(axes, [False, True]):
-            ax.set_xlim(0, image_size[1]); ax.set_ylim(image_size[0], 0)
-            ax.add_patch(Rectangle((0, 0), image_size[1], image_size[0],
-                                   facecolor='lightgray', alpha=0.2))
+            ax.set_xlim(0, image_size[1])
+            ax.set_ylim(image_size[0], 0)
+            ax.add_patch(
+                Rectangle(
+                    (0, 0),
+                    image_size[1],
+                    image_size[0],
+                    facecolor="lightgray",
+                    alpha=0.2,
+                )
+            )
             ax.grid(True, alpha=0.3)
             if show_keep:
                 sel = keep
-                color = 'lime'
+                color = "lime"
                 alpha = 0.9
                 lw = 1.5
             else:
                 # Show top-N by score for visibility
                 order = scores.argsort()[::-1]
                 sel = order[:400]  # cap for plotting
-                color = 'red'
+                color = "red"
                 alpha = 0.25
                 lw = 1.0
             for idx in sel:
                 x1, y1, x2, y2 = anchors[idx]
-                ax.add_patch(Rectangle((x1, y1), x2 - x1, y2 - y1,
-                                       edgecolor=color, facecolor='none',
-                                       linewidth=lw, alpha=alpha))
+                ax.add_patch(
+                    Rectangle(
+                        (x1, y1),
+                        x2 - x1,
+                        y2 - y1,
+                        edgecolor=color,
+                        facecolor="none",
+                        linewidth=lw,
+                        alpha=alpha,
+                    )
+                )
             ax.set_title(titles[0] if not show_keep else titles[1])
 
         plt.tight_layout()
-        outname = f'micro_nms_iou{int(iou_thresh*100)}.png'
-        plt.savefig(outname, dpi=200, bbox_inches='tight')
+        outname = f"micro_nms_iou{int(iou_thresh*100)}.png"
+        plt.savefig(outname, dpi=200, bbox_inches="tight")
         print(f"Saved: {outname}")
         plt.show()
 
@@ -409,9 +528,9 @@ def demo_anchor_properties():
 
     # Standard Faster R-CNN-ish configuration
     anchor_gen = AnchorGenerator(
-        scales=[8, 16, 32],            # 3 scales
-        aspect_ratios=[0.5, 1.0, 2.0], # 3 aspect ratios
-        stride=16                       # Typical for VGG/ResNet C4
+        scales=[8, 16, 32],  # 3 scales
+        aspect_ratios=[0.5, 1.0, 2.0],  # 3 aspect ratios
+        stride=16,  # Typical for VGG/ResNet C4
     )
 
     print("\n1. Base Anchor Generation")
@@ -426,7 +545,9 @@ def demo_anchor_properties():
         scale = anchor_gen.scales[scale_idx]
         ratio = anchor_gen.aspect_ratios[ratio_idx]
         x1, y1, x2, y2 = anchor
-        w = x2 - x1; h = y2 - y1; area = w * h
+        w = x2 - x1
+        h = y2 - y1
+        area = w * h
         print(f"{scale:<8} {ratio:<8.1f} {w:<10.1f} {h:<10.1f} {area:<10.1f}")
 
     print("\n2. Anchor Properties and Lattice (YOLO grid overlay)")
@@ -451,7 +572,7 @@ def demo_anchor_properties():
         image_size=image_size,
         feature_map_size=feature_map_size,
         gt_box=gt_box,
-        iou_vis_thresh=0.5
+        iou_vis_thresh=0.5,
     )
 
     print_parametrization_explainer()
@@ -461,15 +582,14 @@ def demo_anchor_properties():
     # Treat IoU with the GT as a stand-in objectness score
     scores = ious
     keep = anchor_gen.micro_nms_demo(
-        anchors=anchors, scores=scores,
-        image_size=image_size,
-        iou_thresh=0.5, topk=200
+        anchors=anchors, scores=scores, image_size=image_size, iou_thresh=0.5, topk=200
     )
 
     print("\n" + "=" * 70)
     print("Why Anchors Matter for Faster R-CNN:")
     print("=" * 70)
-    print("""
+    print(
+        """
 1) MULTI-SCALE & MULTI-SHAPE:
    - Scales (8,16,32) and ratios (0.5,1,2) cover size/shape diversity.
 
@@ -483,7 +603,8 @@ def demo_anchor_properties():
 4) CONNECTION TO YOLO:
    - Same lattice as YOLO's S×S grid; YOLOv2/3 attach anchors per cell,
      while YOLOv1 regresses boxes directly from the cell without priors.
-    """)
+    """
+    )
 
     print("\nDemo Complete!")
     print("=" * 70)
