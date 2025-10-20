@@ -688,6 +688,7 @@ def main(
 
         np.save(
             os.path.join(currentDirectory, config["skip_mode"], "train_losses.npy"),
+            np.array(train_losses),
         )
         np.save(
             os.path.join(currentDirectory, config["skip_mode"], "val_losses.npy"),
