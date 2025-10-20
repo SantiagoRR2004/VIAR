@@ -32,6 +32,7 @@ currentDirectory = os.path.dirname(os.path.abspath(__file__))
 
 # ================== Training and Evaluation Functions ==================
 
+
 def calculate_iou(pred, target, threshold=0.5):
     """Calculate Intersection over Union"""
     # Task 3.4: Implement IoU calculation
