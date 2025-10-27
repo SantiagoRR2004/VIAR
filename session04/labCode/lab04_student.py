@@ -13,6 +13,7 @@ from torch.utils.data import DataLoader, random_split
 import torchvision.transforms as transforms
 from torchvision.datasets import OxfordIIITPet
 import numpy as np
+import matplotlib.gridspec as gridspec
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 import time
@@ -102,39 +103,54 @@ def validate(model, dataloader, criterion, device):
     return total_loss / len(dataloader), total_iou / len(dataloader)
 
 
-def visualize_predictions(model, dataloader, device, num_samples=4):
+def visualize_predictions(models: dict, dataloader, device):
     """Visualize model predictions"""
-    model.eval()
+    for model in models.values():
+        model.eval()
 
     # Implement visualization
     # 1. Get a batch of images and masks
     # 2. Generate predictions
     # 3. Create subplot showing: input, ground truth, prediction
 
+    # Get one batch and take the first sample
     images, masks = next(iter(dataloader))
-    images, masks = images.to(device), masks.to(device)
+    image, mask = images[0].unsqueeze(0).to(device), masks[0].unsqueeze(0).to(device)
 
+    # Collect predictions from each model
+    preds = {}
     with torch.no_grad():
-        outputs = model(images)
-        preds = torch.sigmoid(outputs) > 0.5
+        for name, model in models.items():
+            output = model(image)
+            pred = torch.sigmoid(output)  # > 0.5
+            preds[name] = pred.cpu().squeeze().numpy()
 
-    # Plotting
-    plt.figure(figsize=(12, 4))
-    for j in range(min(4, images.size(0))):
-        plt.subplot(3, 4, j + 1)
-        plt.imshow(images[j].cpu().permute(1, 2, 0) * 0.5 + 0.5)
-        plt.title("Input Image")
-        plt.axis("off")
+    cols = max(2, len(models))
 
-        plt.subplot(3, 4, j + 5)
-        plt.imshow(masks[j].cpu().squeeze(), cmap="gray")
-        plt.title("Ground Truth")
-        plt.axis("off")
+    fig = plt.figure(figsize=(4 * cols, 6))
+    outer_gs = gridspec.GridSpec(2, 1, height_ratios=[1, 1.2], figure=fig)
 
-        plt.subplot(3, 4, j + 9)
-        plt.imshow(preds[j].cpu().squeeze(), cmap="gray")
-        plt.title("Prediction")
-        plt.axis("off")
+    # --- Top row: its own 1x2 grid
+    top_gs = gridspec.GridSpecFromSubplotSpec(1, 2, subplot_spec=outer_gs[0])
+
+    ax_img = fig.add_subplot(top_gs[0, 0])
+    ax_img.imshow(image[0].cpu().permute(1, 2, 0) * 0.5 + 0.5)
+    ax_img.set_title("Input Image")
+    ax_img.axis("off")
+
+    ax_mask = fig.add_subplot(top_gs[0, 1])
+    ax_mask.imshow(mask[0].cpu().squeeze(), cmap="gray")
+    ax_mask.set_title("Ground Truth")
+    ax_mask.axis("off")
+
+    # --- Bottom row: model predictions
+    bottom_gs = gridspec.GridSpecFromSubplotSpec(1, cols, subplot_spec=outer_gs[1])
+
+    for i, (name, pred) in enumerate(preds.items()):
+        ax = fig.add_subplot(bottom_gs[0, i])
+        ax.imshow(pred, cmap="gray")
+        ax.set_title(f"{name.capitalize()}")
+        ax.axis("off")
 
     plt.tight_layout()
 
@@ -371,9 +387,6 @@ def main(
     # Plot training curves
     plot_training_curves(train_losses, val_losses, train_ious, val_ious)
 
-    # Visualize final predictions
-    visualize_predictions(model, valLoader, device)
-
     print("Training complete!")
 
     return {
@@ -407,9 +420,20 @@ def analyze_skip_connections():
         "image_size": 128,
     }
 
+    models = {}
+
     # Run experiments for each mode
     for mode in ["concat", "add", "attention"]:
         results[mode] = main(skip_mode=mode, **config)
+        models[mode] = UNet.UNet(in_channels=3, out_channels=1, skipMode=mode).to(
+            device
+        )
+        models[mode].load_state_dict(
+            torch.load(
+                os.path.join(currentDirectory, mode, "best_unet_model.pth"),
+                map_location=device,
+            )
+        )
 
     # Create comparison table/plot
     table = PrettyTable()
@@ -433,6 +457,8 @@ def analyze_skip_connections():
             ]
         )
     print(table)
+
+    visualize_predictions(models, get_dataloaders(config)[1], device)
 
     return results
 
