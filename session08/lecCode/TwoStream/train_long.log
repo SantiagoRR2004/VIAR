@@ -1,0 +1,6 @@
+[Setup] Train videos: 9537 | Val videos: 3783 | segments=5 | pairs=10 | batch_size=8
+Train videos: 9537 | Val videos: 3783 | Temporal-only: True | Spatial used: False | Fuse: False
+Flow: farneback | segments: 5 | pairs: 10
+[Info] Starting training … computing optical flow & building batches (first epoch may be slow).
+[Train] batch    1/1192 | loss 4.5838 | acc  0.00% | avg_loss 4.5838 | avg_acc  0.00% |    0.6 samp/s | eta 264.2 min
+[Train] batch   25/1192 | loss 4.8648 | acc  0.00% | avg_loss 4.6466 | avg_acc  0.50% |    2.9 samp/s | eta 63.2 min

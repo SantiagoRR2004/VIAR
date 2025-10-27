@@ -1,0 +1,39 @@
+[Setup] Train videos: 9537 | Val videos: 3783 | segments=2 | pairs=10 | batch_size=4
+Train videos: 9537 | Val videos: 3783 | Temporal-only: True | Spatial used: False | Fuse: False
+Flow: farneback | segments: 2 | pairs: 10
+[Info] Starting training … computing optical flow & building batches (first epoch may be slow).
+[Train] batch    1/2384 | loss 4.5948 | acc  0.00% | avg_loss 4.5948 | avg_acc  0.00% |    4.1 samp/s | eta 39.0 min
+[Train] batch   10/2384 | loss 4.6658 | acc  0.00% | avg_loss 4.6617 | avg_acc  0.00% |   47.5 samp/s | eta 7.2 min
+[Train] batch   20/2384 | loss 4.3701 | acc  0.00% | avg_loss 4.6227 | avg_acc  0.00% |   42.5 samp/s | eta 5.4 min
+[Train] batch   30/2384 | loss 4.8500 | acc  0.00% | avg_loss 4.6518 | avg_acc  0.00% |   42.5 samp/s | eta 4.8 min
+[Train] batch   40/2384 | loss 4.9561 | acc  0.00% | avg_loss 4.6390 | avg_acc  0.00% |   43.0 samp/s | eta 4.5 min
+[Train] batch   50/2384 | loss 4.9672 | acc  0.00% | avg_loss 4.6533 | avg_acc  0.00% |   42.8 samp/s | eta 4.3 min
+[Train] batch   60/2384 | loss 4.5202 | acc  0.00% | avg_loss 4.6481 | avg_acc  0.00% |   42.6 samp/s | eta 4.2 min
+[Train] batch   70/2384 | loss 4.5438 | acc  0.00% | avg_loss 4.6377 | avg_acc  0.00% |   42.1 samp/s | eta 4.1 min
+[Train] batch   80/2384 | loss 4.6448 | acc  0.00% | avg_loss 4.6440 | avg_acc  0.00% |   42.7 samp/s | eta 4.0 min
+[Train] batch   90/2384 | loss 4.8910 | acc  0.00% | avg_loss 4.6406 | avg_acc  0.28% |   40.2 samp/s | eta 4.0 min
+[Train] batch  100/2384 | loss 4.3848 | acc 25.00% | avg_loss 4.6297 | avg_acc  0.75% |   42.9 samp/s | eta 3.9 min
+[Train] batch  110/2384 | loss 5.0516 | acc  0.00% | avg_loss 4.6382 | avg_acc  0.68% |   42.8 samp/s | eta 3.9 min
+[Train] batch  120/2384 | loss 4.7330 | acc  0.00% | avg_loss 4.6490 | avg_acc  0.83% |   42.5 samp/s | eta 3.8 min
+[Train] batch  130/2384 | loss 4.2258 | acc  0.00% | avg_loss 4.6468 | avg_acc  1.15% |    6.7 samp/s | eta 5.2 min
+[Train] batch  140/2384 | loss 4.5455 | acc  0.00% | avg_loss 4.6520 | avg_acc  1.07% |    9.0 samp/s | eta 6.0 min
+[Train] batch  150/2384 | loss 4.6032 | acc  0.00% | avg_loss 4.6512 | avg_acc  1.00% |    6.7 samp/s | eta 7.1 min
+[Train] batch  160/2384 | loss 4.7676 | acc  0.00% | avg_loss 4.6528 | avg_acc  0.94% |    8.7 samp/s | eta 7.7 min
+[Train] batch  170/2384 | loss 4.6386 | acc  0.00% | avg_loss 4.6449 | avg_acc  1.32% |    6.4 samp/s | eta 8.6 min
+[Train] batch  180/2384 | loss 4.3309 | acc 25.00% | avg_loss 4.6411 | avg_acc  1.53% |    8.4 samp/s | eta 9.0 min
+[Train] batch  190/2384 | loss 5.0839 | acc  0.00% | avg_loss 4.6403 | avg_acc  1.45% |    6.5 samp/s | eta 9.7 min
+[Train] batch  200/2384 | loss 4.4598 | acc  0.00% | avg_loss 4.6388 | avg_acc  1.38% |    8.4 samp/s | eta 10.0 min
+[Train] batch  210/2384 | loss 4.8348 | acc  0.00% | avg_loss 4.6400 | avg_acc  1.43% |    5.6 samp/s | eta 10.7 min
+[Train] batch  220/2384 | loss 4.7725 | acc  0.00% | avg_loss 4.6377 | avg_acc  1.36% |    8.1 samp/s | eta 11.0 min
+[Train] batch  230/2384 | loss 4.3696 | acc  0.00% | avg_loss 4.6372 | avg_acc  1.41% |    6.1 samp/s | eta 11.5 min
+[Train] batch  240/2384 | loss 4.4276 | acc  0.00% | avg_loss 4.6332 | avg_acc  1.46% |    8.4 samp/s | eta 11.7 min
+[Train] batch  250/2384 | loss 4.3958 | acc  0.00% | avg_loss 4.6326 | avg_acc  1.40% |    6.4 samp/s | eta 12.1 min
+[Train] batch  260/2384 | loss 4.2932 | acc  0.00% | avg_loss 4.6270 | avg_acc  1.44% |    8.6 samp/s | eta 12.2 min
+[Train] batch  270/2384 | loss 4.6276 | acc  0.00% | avg_loss 4.6273 | avg_acc  1.39% |    6.2 samp/s | eta 12.5 min
+[Train] batch  280/2384 | loss 4.2169 | acc 25.00% | avg_loss 4.6247 | avg_acc  1.52% |    9.0 samp/s | eta 12.6 min
+[Train] batch  290/2384 | loss 4.4724 | acc  0.00% | avg_loss 4.6245 | avg_acc  1.47% |    6.7 samp/s | eta 12.8 min
+[Train] batch  300/2384 | loss 4.5438 | acc 25.00% | avg_loss 4.6215 | avg_acc  1.58% |    9.1 samp/s | eta 12.8 min
+[Train] batch  310/2384 | loss 4.3372 | acc  0.00% | avg_loss 4.6183 | avg_acc  1.53% |    6.5 samp/s | eta 13.0 min
+[Train] batch  320/2384 | loss 5.1809 | acc  0.00% | avg_loss 4.6195 | avg_acc  1.48% |    6.9 samp/s | eta 13.2 min
+[Train] batch  330/2384 | loss 4.6706 | acc  0.00% | avg_loss 4.6166 | avg_acc  1.44% |    5.7 samp/s | eta 13.4 min
+[Train] batch  340/2384 | loss 4.8277 | acc  0.00% | avg_loss 4.6142 | avg_acc  1.47% |    8.3 samp/s | eta 13.5 min
