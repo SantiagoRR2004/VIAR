@@ -33,34 +33,44 @@ import torchvision.models as models
 from torchvision.models import ResNet50_Weights
 
 # headless-safe plotting
-if os.environ.get("MPLBACKEND","") == "":
+if os.environ.get("MPLBACKEND", "") == "":
     try:
         import tkinter  # noqa
     except Exception:
         matplotlib.use("Agg")
 
+
 # ------------------------------
 # Core DFF module
 # ------------------------------
 class DeepFeatureFlow(nn.Module):
-    def __init__(self, backbone: nn.Module, key_frame_interval: int = 10, flow_method: str = 'farneback',
-                 device: Optional[torch.device] = None):
+    def __init__(
+        self,
+        backbone: nn.Module,
+        key_frame_interval: int = 10,
+        flow_method: str = "farneback",
+        device: Optional[torch.device] = None,
+    ):
         super().__init__()
         self.backbone = backbone.eval()
         self.key_frame_interval = max(1, int(key_frame_interval))
         self.flow_method = flow_method
-        self.device = device or torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        self.device = device or torch.device(
+            "cuda" if torch.cuda.is_available() else "cpu"
+        )
         self.backbone.to(self.device)
 
         # Toy head: 1 obj logit + 4 box values (x1,y1,x2,y2) normalized to image size
         self.detection_head = nn.Sequential(
-            nn.Conv2d(2048, 512, 3, padding=1), nn.ReLU(inplace=True),
-            nn.Conv2d(512, 256, 3, padding=1), nn.ReLU(inplace=True),
-            nn.Conv2d(256, 5, 1)
+            nn.Conv2d(2048, 512, 3, padding=1),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(512, 256, 3, padding=1),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(256, 5, 1),
         ).to(self.device)
 
     def compute_optical_flow(self, bgr1: np.ndarray, bgr2: np.ndarray) -> np.ndarray:
-        if self.flow_method != 'farneback':
+        if self.flow_method != "farneback":
             raise NotImplementedError
         g1 = cv2.cvtColor(bgr1, cv2.COLOR_BGR2GRAY)
         g2 = cv2.cvtColor(bgr2, cv2.COLOR_BGR2GRAY)
@@ -70,57 +80,67 @@ class DeepFeatureFlow(nn.Module):
         rgb = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
         im = cv2.resize(rgb, (224, 224), interpolation=cv2.INTER_LINEAR)
         t = torch.from_numpy(im).to(self.device, dtype=torch.float32)
-        t = t.permute(2,0,1).unsqueeze(0)/255.0
-        mean = torch.tensor([0.485,0.456,0.406], device=self.device).view(1,3,1,1)
-        std  = torch.tensor([0.229,0.224,0.225], device=self.device).view(1,3,1,1)
-        return (t-mean)/std
+        t = t.permute(2, 0, 1).unsqueeze(0) / 255.0
+        mean = torch.tensor([0.485, 0.456, 0.406], device=self.device).view(1, 3, 1, 1)
+        std = torch.tensor([0.229, 0.224, 0.225], device=self.device).view(1, 3, 1, 1)
+        return (t - mean) / std
 
     @torch.no_grad()
     def extract_backbone(self, bgr: np.ndarray) -> torch.Tensor:
-        return self.backbone(self.preprocess_frame(bgr))  # (1,2048,7,7) for resnet50@224
+        return self.backbone(
+            self.preprocess_frame(bgr)
+        )  # (1,2048,7,7) for resnet50@224
 
     def warp_features(self, features: torch.Tensor, flow: np.ndarray) -> torch.Tensor:
         _, _, Hf, Wf = features.shape
         Hi, Wi = flow.shape[:2]
         flow_rs = cv2.resize(flow, (Wf, Hf), interpolation=cv2.INTER_LINEAR)
-        flow_rs[...,0] *= (Wf/float(Wi))
-        flow_rs[...,1] *= (Hf/float(Hi))
-        dev = features.device; dt = features.dtype
+        flow_rs[..., 0] *= Wf / float(Wi)
+        flow_rs[..., 1] *= Hf / float(Hi)
+        dev = features.device
+        dt = features.dtype
         gy, gx = torch.meshgrid(
-            torch.linspace(-1,1,Hf, device=dev, dtype=dt),
-            torch.linspace(-1,1,Wf, device=dev, dtype=dt),
-            indexing='ij'
+            torch.linspace(-1, 1, Hf, device=dev, dtype=dt),
+            torch.linspace(-1, 1, Wf, device=dev, dtype=dt),
+            indexing="ij",
         )
-        base = torch.stack([gx,gy], dim=-1).unsqueeze(0)  # (1,Hf,Wf,2)
+        base = torch.stack([gx, gy], dim=-1).unsqueeze(0)  # (1,Hf,Wf,2)
         ft = torch.from_numpy(flow_rs).to(dev, dt)
         flow_norm = torch.empty_like(base)
-        flow_norm[...,0] = ft[...,0]/(Wf/2.0)
-        flow_norm[...,1] = ft[...,1]/(Hf/2.0)
+        flow_norm[..., 0] = ft[..., 0] / (Wf / 2.0)
+        flow_norm[..., 1] = ft[..., 1] / (Hf / 2.0)
         grid = base + flow_norm
-        return F.grid_sample(features, grid, mode='bilinear', padding_mode='border', align_corners=True)
+        return F.grid_sample(
+            features, grid, mode="bilinear", padding_mode="border", align_corners=True
+        )
 
     def detect_objects(self, feats: torch.Tensor) -> Dict[str, torch.Tensor]:
-        logits = self.detection_head(feats)               # (1,5,Hf,Wf)
-        obj = torch.sigmoid(logits[:,0:1])                # (1,1,Hf,Wf)
-        boxes = logits[:,1:5]                             # normalized [x1,y1,x2,y2]
+        logits = self.detection_head(feats)  # (1,5,Hf,Wf)
+        obj = torch.sigmoid(logits[:, 0:1])  # (1,1,Hf,Wf)
+        boxes = logits[:, 1:5]  # normalized [x1,y1,x2,y2]
         return {"objectness": obj, "logits": logits, "boxes": boxes}
 
-    def forward(self, frames_bgr: List[np.ndarray], adaptive: bool=False,
-                diff_thresh: float=900.0, flow_thresh: float=6.0) -> List[torch.Tensor]:
+    def forward(
+        self,
+        frames_bgr: List[np.ndarray],
+        adaptive: bool = False,
+        diff_thresh: float = 900.0,
+        flow_thresh: float = 6.0,
+    ) -> List[torch.Tensor]:
         feats_all = []
         key_feats = None
         key_idx = 0
         prev = frames_bgr[0]
         for i, frame in enumerate(frames_bgr):
             force_key = False
-            if adaptive and i>0:
+            if adaptive and i > 0:
                 # grayscale MSE
                 g1 = cv2.cvtColor(prev, cv2.COLOR_BGR2GRAY).astype(np.float32)
                 g2 = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY).astype(np.float32)
-                mse = np.mean((g1-g2)**2)
+                mse = np.mean((g1 - g2) ** 2)
                 # rough flow magnitude
                 flow = self.compute_optical_flow(prev, frame)
-                mag, _ = cv2.cartToPolar(flow[...,0], flow[...,1])
+                mag, _ = cv2.cartToPolar(flow[..., 0], flow[..., 1])
                 mag_mean = float(np.mean(mag))
                 if mse > diff_thresh or mag_mean > flow_thresh:
                     force_key = True
@@ -135,30 +155,52 @@ class DeepFeatureFlow(nn.Module):
                 feats_all.append(self.warp_features(key_feats, flow))
         return feats_all
 
+
 # ------------------------------
 # Plotting & diagnostics
 # ------------------------------
-def visualize_feature_energy(feats: torch.Tensor, title: str, path: Optional[str]=None):
+def visualize_feature_energy(
+    feats: torch.Tensor, title: str, path: Optional[str] = None
+):
     energy = feats.norm(dim=1, keepdim=False)[0].detach().cpu().numpy()
-    plt.figure(figsize=(6,6)); plt.imshow(energy, cmap='viridis'); plt.colorbar()
-    plt.title(title); plt.axis('off'); plt.tight_layout()
-    if path: plt.savefig(path, dpi=140); plt.close()
-    else: plt.show()
+    plt.figure(figsize=(6, 6))
+    plt.imshow(energy, cmap="viridis")
+    plt.colorbar()
+    plt.title(title)
+    plt.axis("off")
+    plt.tight_layout()
+    if path:
+        plt.savefig(path, dpi=140)
+        plt.close()
+    else:
+        plt.show()
 
-def visualize_flow(flow: np.ndarray, title: str, path: Optional[str]=None):
-    mag, ang = cv2.cartToPolar(flow[...,0], flow[...,1])
-    hsv = np.zeros((*flow.shape[:2],3), dtype=np.uint8)
-    hsv[...,0] = (ang*180/np.pi/2).astype(np.uint8)
-    hsv[...,1] = 255
-    hsv[...,2] = cv2.normalize(mag, None, 0,255, cv2.NORM_MINMAX).astype(np.uint8)
+
+def visualize_flow(flow: np.ndarray, title: str, path: Optional[str] = None):
+    mag, ang = cv2.cartToPolar(flow[..., 0], flow[..., 1])
+    hsv = np.zeros((*flow.shape[:2], 3), dtype=np.uint8)
+    hsv[..., 0] = (ang * 180 / np.pi / 2).astype(np.uint8)
+    hsv[..., 1] = 255
+    hsv[..., 2] = cv2.normalize(mag, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
     rgb = cv2.cvtColor(hsv, cv2.COLOR_HSV2RGB)
-    plt.figure(figsize=(8,6)); plt.imshow(rgb); plt.title(title); plt.axis('off'); plt.tight_layout()
-    if path: plt.savefig(path, dpi=140); plt.close()
-    else: plt.show()
+    plt.figure(figsize=(8, 6))
+    plt.imshow(rgb)
+    plt.title(title)
+    plt.axis("off")
+    plt.tight_layout()
+    if path:
+        plt.savefig(path, dpi=140)
+        plt.close()
+    else:
+        plt.show()
+
 
 def print_stats(tag: str, t: torch.Tensor):
     x = t.detach().float().cpu()
-    print(f"{tag}: mean={x.mean():.5f} std={x.std():.5f} min={x.min():.5f} max={x.max():.5f}")
+    print(
+        f"{tag}: mean={x.mean():.5f} std={x.std():.5f} min={x.min():.5f} max={x.max():.5f}"
+    )
+
 
 # ------------------------------
 # Simple annotator (OpenCV UI)
@@ -180,30 +222,33 @@ class BoxAnnotator:
             pass
         elif event == cv2.EVENT_LBUTTONUP:
             self.drawing = False
-            x1, y1 = min(self.x0,x), min(self.y0,y)
-            x2, y2 = max(self.x0,x), max(self.y0,y)
-            if (x2-x1) > 3 and (y2-y1) > 3:
-                self.boxes.append((x1,y1,x2,y2))
+            x1, y1 = min(self.x0, x), min(self.y0, y)
+            x2, y2 = max(self.x0, x), max(self.y0, y)
+            if (x2 - x1) > 3 and (y2 - y1) > 3:
+                self.boxes.append((x1, y1, x2, y2))
 
-    def annotate_frame(self, frame_bgr: np.ndarray) -> List[Tuple[int,int,int,int]]:
+    def annotate_frame(self, frame_bgr: np.ndarray) -> List[Tuple[int, int, int, int]]:
         self.boxes = []
         disp = frame_bgr.copy()
         while True:
             tmp = disp.copy()
             # draw existing boxes
-            for (x1,y1,x2,y2) in self.boxes:
-                cv2.rectangle(tmp, (x1,y1), (x2,y2), (0,255,0), 2)
+            for x1, y1, x2, y2 in self.boxes:
+                cv2.rectangle(tmp, (x1, y1), (x2, y2), (0, 255, 0), 2)
             cv2.imshow(self.window, tmp)
             k = cv2.waitKey(10) & 0xFF
-            if k == ord('n'):     # next frame
+            if k == ord("n"):  # next frame
                 break
-            if k == ord('c'):     # clear
+            if k == ord("c"):  # clear
                 self.boxes = []
-            if k == ord('q'):
+            if k == ord("q"):
                 break
         return self.boxes
 
-def run_annotator(video_path: str, out_json: str, stride: int = 10, max_frames: int = 300):
+
+def run_annotator(
+    video_path: str, out_json: str, stride: int = 10, max_frames: int = 300
+):
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
         raise RuntimeError(f"Cannot open {video_path}")
@@ -213,7 +258,8 @@ def run_annotator(video_path: str, out_json: str, stride: int = 10, max_frames: 
     cnt = 0
     while cnt < max_frames:
         ok, frame = cap.read()
-        if not ok: break
+        if not ok:
+            break
         if idx % stride == 0:
             print(f"[anno] frame {idx}: draw boxes (keys: n=next, c=clear, q=quit)")
             boxes = annot.annotate_frame(frame)
@@ -226,15 +272,19 @@ def run_annotator(video_path: str, out_json: str, stride: int = 10, max_frames: 
         json.dump(ann, f)
     print(f"[anno] Saved to {out_json}")
 
+
 # ------------------------------
 # Box training (tiny COCO-style)
 # ------------------------------
 @torch.no_grad()
-def extract_all_backbone_features(dff: DeepFeatureFlow, frames_bgr: List[np.ndarray]) -> torch.Tensor:
+def extract_all_backbone_features(
+    dff: DeepFeatureFlow, frames_bgr: List[np.ndarray]
+) -> torch.Tensor:
     feats = []
     for f in frames_bgr:
         feats.append(dff.extract_backbone(f))
     return torch.cat(feats, dim=0)  # (N,C,Hf,Wf)
+
 
 def load_video_frames(video_path: str, max_frames: int = 300) -> List[np.ndarray]:
     cap = cv2.VideoCapture(video_path)
@@ -243,10 +293,12 @@ def load_video_frames(video_path: str, max_frames: int = 300) -> List[np.ndarray
     frames = []
     while len(frames) < max_frames:
         ok, f = cap.read()
-        if not ok: break
+        if not ok:
+            break
         frames.append(f)
     cap.release()
     return frames
+
 
 # def make_targets_from_boxes(ann: Dict[str, List[List[int]]], frames: List[np.ndarray],
 #                             Hf: int, Wf: int) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
@@ -307,29 +359,31 @@ def make_targets_from_boxes(ann, frames, Hf, Wf):
             continue
         ys = (np.arange(Hf) + 0.5) * (H / Hf)
         xs = (np.arange(Wf) + 0.5) * (W / Wf)
-        yy, xx = np.meshgrid(ys, xs, indexing='ij')  # (Hf,Wf)
+        yy, xx = np.meshgrid(ys, xs, indexing="ij")  # (Hf,Wf)
 
         pos = np.zeros((Hf, Wf), dtype=bool)
         reg = np.zeros((4, Hf, Wf), dtype=np.float32)
-        for (x1,y1,x2,y2) in boxes:
+        for x1, y1, x2, y2 in boxes:
             inside = (xx >= x1) & (xx <= x2) & (yy >= y1) & (yy <= y2)
             pos |= inside
-            reg[0][inside] = x1 / W; reg[1][inside] = y1 / H
-            reg[2][inside] = x2 / W; reg[3][inside] = y2 / H
+            reg[0][inside] = x1 / W
+            reg[1][inside] = y1 / H
+            reg[2][inside] = x2 / W
+            reg[3][inside] = y2 / H
 
         if pos.any():
             has_pos.append(i)
-            obj[i,0] = pos.astype(np.float32)
-            box[i]    = reg
+            obj[i, 0] = pos.astype(np.float32)
+            box[i] = reg
 
     mask = obj.astype(bool)
     has_pos_idx = np.array(has_pos, dtype=np.int64)
-    return (torch.from_numpy(obj), torch.from_numpy(box),
-            torch.from_numpy(mask), has_pos_idx)
-
-
-
-
+    return (
+        torch.from_numpy(obj),
+        torch.from_numpy(box),
+        torch.from_numpy(mask),
+        has_pos_idx,
+    )
 
 
 # def train_toy_head_from_boxes(dff: DeepFeatureFlow, frames: List[np.ndarray], anno_path: str,
@@ -393,12 +447,14 @@ def make_targets_from_boxes(ann, frames, Hf, Wf):
 
 def train_toy_head_from_boxes(dff, frames, anno_path, epochs=5, lr=1e-3, batch_size=16):
     import json
+
     with open(anno_path, "r") as f:
         ann = json.load(f)
 
     # freeze backbone
     dff.backbone.eval()
-    for p in dff.backbone.parameters(): p.requires_grad_(False)
+    for p in dff.backbone.parameters():
+        p.requires_grad_(False)
     dff.detection_head.train()
 
     with torch.no_grad():
@@ -407,40 +463,42 @@ def train_toy_head_from_boxes(dff, frames, anno_path, epochs=5, lr=1e-3, batch_s
 
     obj_tgt, box_tgt, mask, has_pos_idx = make_targets_from_boxes(ann, frames, Hf, Wf)
     if has_pos_idx.size == 0:
-        print("[train boxes] no positive frames found in annotations — nothing to train.")
+        print(
+            "[train boxes] no positive frames found in annotations — nothing to train."
+        )
         dff.detection_head.eval()
         return
 
     # keep only frames with positives
-    feats   = feats[has_pos_idx]
+    feats = feats[has_pos_idx]
     obj_tgt = obj_tgt[has_pos_idx]
     box_tgt = box_tgt[has_pos_idx]
-    mask    = mask[has_pos_idx]
+    mask = mask[has_pos_idx]
 
     device = dff.device
-    feats   = feats.to(device)
+    feats = feats.to(device)
     obj_tgt = obj_tgt.to(device)
     box_tgt = box_tgt.to(device)
-    mask    = mask.to(device)
+    mask = mask.to(device)
 
     opt = torch.optim.Adam(dff.detection_head.parameters(), lr=lr, weight_decay=1e-5)
-    sl1 = nn.SmoothL1Loss(reduction='none')
+    sl1 = nn.SmoothL1Loss(reduction="none")
 
     idx = torch.arange(feats.size(0), device=device)
-    for ep in range(1, epochs+1):
+    for ep in range(1, epochs + 1):
         perm = idx[torch.randperm(idx.numel())]
         loss_b, loss_r = 0.0, 0.0
         t0 = time.time()
         for s in range(0, perm.numel(), batch_size):
-            b = perm[s:s+batch_size]
-            x = feats[b]                        # (B,C,Hf,Wf)
-            y_obj = obj_tgt[b]                  # (B,1,Hf,Wf)
-            y_box = box_tgt[b]                  # (B,4,Hf,Wf)
-            m = mask[b]                         # (B,1,Hf,Wf)
+            b = perm[s : s + batch_size]
+            x = feats[b]  # (B,C,Hf,Wf)
+            y_obj = obj_tgt[b]  # (B,1,Hf,Wf)
+            y_box = box_tgt[b]  # (B,4,Hf,Wf)
+            m = mask[b]  # (B,1,Hf,Wf)
 
-            out = dff.detection_head(x)         # (B,5,Hf,Wf)
-            obj_logit = out[:,0:1]
-            box_pred  = out[:,1:5]
+            out = dff.detection_head(x)  # (B,5,Hf,Wf)
+            obj_logit = out[:, 0:1]
+            box_pred = out[:, 1:5]
 
             # ----- Balanced BCE -----
             # compute per-batch positive/negative counts
@@ -464,7 +522,9 @@ def train_toy_head_from_boxes(dff, frames, anno_path, epochs=5, lr=1e-3, batch_s
             loss_b += float(Lobj.detach().cpu())
             loss_r += float(Lbox.detach().cpu())
         t1 = time.time()
-        print(f"[train boxes] epoch {ep:02d} | obj={loss_b:.4f} box={loss_r:.4f} | time={t1-t0:.2f}s")
+        print(
+            f"[train boxes] epoch {ep:02d} | obj={loss_b:.4f} box={loss_r:.4f} | time={t1-t0:.2f}s"
+        )
 
     dff.detection_head.eval()
 
@@ -475,85 +535,139 @@ def _probe_fps(path, default=30):
     cap.release()
     return fps if fps > 0 else default
 
-def save_overlay_video(frames_bgr, dff, feats, out_path="overlay.mp4", thr=0.6, topk=5, fps=30):
+
+def save_overlay_video(
+    frames_bgr, dff, feats, out_path="overlay.mp4", thr=0.6, topk=5, fps=30
+):
     H, W = frames_bgr[0].shape[:2]
-    fourcc = cv2.VideoWriter_fourcc(*"mp4v")   # fallback: 'XVID'
+    fourcc = cv2.VideoWriter_fourcc(*"mp4v")  # fallback: 'XVID'
     vw = cv2.VideoWriter(out_path, fourcc, fps, (W, H))
     with torch.no_grad():
         for f, F in zip(frames_bgr, feats):
             out = dff.detect_objects(F)
-            obj = out["objectness"][0,0].detach().cpu().numpy()   # (Hf,Wf)
-            box = out["boxes"][0].detach().cpu().numpy()          # (4,Hf,Wf) in [0,1]
+            obj = out["objectness"][0, 0].detach().cpu().numpy()  # (Hf,Wf)
+            box = out["boxes"][0].detach().cpu().numpy()  # (4,Hf,Wf) in [0,1]
             idx = np.argwhere(obj >= thr)
             if idx.size == 0:
                 flat = obj.reshape(-1)
                 top = flat.argsort()[-topk:]
                 idx = np.stack(np.unravel_index(top, obj.shape), axis=1)
             vis = f.copy()
-            for (iy, ix) in idx[:topk]:
-                x1 = int(box[0,iy,ix] * W); y1 = int(box[1,iy,ix] * H)
-                x2 = int(box[2,iy,ix] * W); y2 = int(box[3,iy,ix] * H)
-                cv2.rectangle(vis, (x1,y1), (x2,y2), (0,255,0), 2)
-                cv2.putText(vis, f"{obj[iy,ix]:.2f}", (x1, max(0,y1-5)),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 1, cv2.LINE_AA)
+            for iy, ix in idx[:topk]:
+                x1 = int(box[0, iy, ix] * W)
+                y1 = int(box[1, iy, ix] * H)
+                x2 = int(box[2, iy, ix] * W)
+                y2 = int(box[3, iy, ix] * H)
+                cv2.rectangle(vis, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                cv2.putText(
+                    vis,
+                    f"{obj[iy,ix]:.2f}",
+                    (x1, max(0, y1 - 5)),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    0.5,
+                    (0, 255, 0),
+                    1,
+                    cv2.LINE_AA,
+                )
             vw.write(vis)
     vw.release()
     print(f"[DFF] Saved overlay video to: {out_path}")
 
 
-
-
 # ------------------------------
 # Main pipelines
 # ------------------------------
-def process_video(video_path: str, key_interval: int, adaptive: bool, visualize: bool,
-                  max_frames: int, save_viz_dir: Optional[str]):
+def process_video(
+    video_path: str,
+    key_interval: int,
+    adaptive: bool,
+    visualize: bool,
+    max_frames: int,
+    save_viz_dir: Optional[str],
+):
     # load frames
     cap = cv2.VideoCapture(video_path)
-    if not cap.isOpened(): raise RuntimeError(f"Could not open {video_path}")
+    if not cap.isOpened():
+        raise RuntimeError(f"Could not open {video_path}")
     frames = []
     while len(frames) < max_frames:
         ok, f = cap.read()
-        if not ok: break
+        if not ok:
+            break
         frames.append(f)
     cap.release()
     print(f"Loaded {len(frames)} frames from {video_path}")
 
     resnet = models.resnet50(weights=ResNet50_Weights.DEFAULT)
     backbone = nn.Sequential(*list(resnet.children())[:-2])
-    dff = DeepFeatureFlow(backbone=backbone, key_frame_interval=key_interval, flow_method='farneback')
+    dff = DeepFeatureFlow(
+        backbone=backbone, key_frame_interval=key_interval, flow_method="farneback"
+    )
 
     t0 = time.time()
     feats = dff.forward(frames, adaptive=adaptive)
     t1 = time.time()
-    n = len(frames); n_key = math.floor((n-1)/key_interval) + 1
-    print(f"Inference: {(t1-t0):.3f}s | frames={n} | theo speedup≈{n/max(1,n_key):.2f}x")
+    n = len(frames)
+    n_key = math.floor((n - 1) / key_interval) + 1
+    print(
+        f"Inference: {(t1-t0):.3f}s | frames={n} | theo speedup≈{n/max(1,n_key):.2f}x"
+    )
     print_stats("C5 key stats", feats[0])
 
     if visualize and n >= 2:
-        mid = min(key_interval//2 if key_interval>1 else 1, n-1)
+        mid = min(key_interval // 2 if key_interval > 1 else 1, n - 1)
         os.makedirs(save_viz_dir or ".", exist_ok=True)
-        visualize_feature_energy(feats[0], "Key C5 energy",
-                                 None if not save_viz_dir else os.path.join(save_viz_dir, "c5_key.png"))
-        visualize_feature_energy(feats[mid], f"Prop C5 energy (frame {mid})",
-                                 None if not save_viz_dir else os.path.join(save_viz_dir, f"c5_prop_{mid}.png"))
+        visualize_feature_energy(
+            feats[0],
+            "Key C5 energy",
+            None if not save_viz_dir else os.path.join(save_viz_dir, "c5_key.png"),
+        )
+        visualize_feature_energy(
+            feats[mid],
+            f"Prop C5 energy (frame {mid})",
+            (
+                None
+                if not save_viz_dir
+                else os.path.join(save_viz_dir, f"c5_prop_{mid}.png")
+            ),
+        )
         with torch.no_grad():
-            o0 = dff.detect_objects(feats[0]); om = dff.detect_objects(feats[mid])
+            o0 = dff.detect_objects(feats[0])
+            om = dff.detect_objects(feats[mid])
         for tag, obj in [("key", o0["objectness"]), ("prop", om["objectness"])]:
-            m = obj[0,0].detach().cpu().numpy()
-            plt.figure(figsize=(6,6)); plt.imshow(m, vmin=0, vmax=1); plt.colorbar()
-            plt.title(f"Toy head objectness — {tag}"); plt.axis('off'); plt.tight_layout()
-            if save_viz_dir: plt.savefig(os.path.join(save_viz_dir, f"obj_{tag}.png"), dpi=140); plt.close()
-            else: plt.show()
+            m = obj[0, 0].detach().cpu().numpy()
+            plt.figure(figsize=(6, 6))
+            plt.imshow(m, vmin=0, vmax=1)
+            plt.colorbar()
+            plt.title(f"Toy head objectness — {tag}")
+            plt.axis("off")
+            plt.tight_layout()
+            if save_viz_dir:
+                plt.savefig(os.path.join(save_viz_dir, f"obj_{tag}.png"), dpi=140)
+                plt.close()
+            else:
+                plt.show()
         flow = dff.compute_optical_flow(frames[0], frames[mid])
-        visualize_flow(flow, f"Optical Flow (0→{mid})",
-                       None if not save_viz_dir else os.path.join(save_viz_dir, f"flow_0_{mid}.png"))
+        visualize_flow(
+            flow,
+            f"Optical Flow (0→{mid})",
+            (
+                None
+                if not save_viz_dir
+                else os.path.join(save_viz_dir, f"flow_0_{mid}.png")
+            ),
+        )
+
 
 def main():
-    ap = argparse.ArgumentParser("DFF demo with adaptive keyframes + annotation training")
+    ap = argparse.ArgumentParser(
+        "DFF demo with adaptive keyframes + annotation training"
+    )
     ap.add_argument("--video_path", type=str, required=True)
     ap.add_argument("--key_interval", type=int, default=10)
-    ap.add_argument("--adaptive", action="store_true", help="enable adaptive keyframe resets")
+    ap.add_argument(
+        "--adaptive", action="store_true", help="enable adaptive keyframe resets"
+    )
     ap.add_argument("--visualize", action="store_true")
     ap.add_argument("--max_frames", type=int, default=300)
     ap.add_argument("--save_viz_dir", type=str, default=None)
@@ -569,18 +683,24 @@ def main():
     ap.add_argument("--epochs", type=int, default=5)
     ap.add_argument("--lr", type=float, default=1e-3)
 
-    ap.add_argument("--save_overlay", type=str, default=None,
-                    help="Path to write overlay MP4 (e.g., vfencing_overlay.mp4)")
+    ap.add_argument(
+        "--save_overlay",
+        type=str,
+        default=None,
+        help="Path to write overlay MP4 (e.g., vfencing_overlay.mp4)",
+    )
     ap.add_argument("--overlay_thr", type=float, default=0.6)
     ap.add_argument("--overlay_topk", type=int, default=5)
-
-
-
 
     args = ap.parse_args()
 
     if args.annotate:
-        run_annotator(args.video_path, args.anno_out, stride=args.anno_stride, max_frames=args.max_frames)
+        run_annotator(
+            args.video_path,
+            args.anno_out,
+            stride=args.anno_stride,
+            max_frames=args.max_frames,
+        )
         return
 
     # If training is requested, do it first, then run DFF
@@ -591,8 +711,14 @@ def main():
         frames = load_video_frames(args.video_path, max_frames=args.max_frames)
         resnet = models.resnet50(weights=ResNet50_Weights.DEFAULT)
         backbone = nn.Sequential(*list(resnet.children())[:-2])
-        dff = DeepFeatureFlow(backbone=backbone, key_frame_interval=args.key_interval, flow_method='farneback')
-        train_toy_head_from_boxes(dff, frames, args.anno, epochs=args.epochs, lr=args.lr)
+        dff = DeepFeatureFlow(
+            backbone=backbone,
+            key_frame_interval=args.key_interval,
+            flow_method="farneback",
+        )
+        train_toy_head_from_boxes(
+            dff, frames, args.anno, epochs=args.epochs, lr=args.lr
+        )
         # After training, run DFF inference (with the trained head inside dff)
         # Reuse same frames for speed
         t0 = time.time()
@@ -600,38 +726,57 @@ def main():
         # OPTIONAL overlay
         if args.save_overlay:
             fps = _probe_fps(args.video_path, default=30)
-            save_overlay_video(frames, dff, feats,
-                            out_path=args.save_overlay,
-                            thr=args.overlay_thr,
-                            topk=args.overlay_topk,
-                            fps=fps)
-
-
-
-
+            save_overlay_video(
+                frames,
+                dff,
+                feats,
+                out_path=args.save_overlay,
+                thr=args.overlay_thr,
+                topk=args.overlay_topk,
+                fps=fps,
+            )
 
         t1 = time.time()
         print(f"Inference after training: {(t1-t0):.3f}s on {len(frames)} frames")
         # quick viz
         if args.visualize and len(frames) >= 2:
             os.makedirs(args.save_viz_dir or ".", exist_ok=True)
-            mid = min(args.key_interval//2 if args.key_interval>1 else 1, len(frames)-1)
+            mid = min(
+                args.key_interval // 2 if args.key_interval > 1 else 1, len(frames) - 1
+            )
             with torch.no_grad():
-                o0 = dff.detect_objects(feats[0]); om = dff.detect_objects(feats[mid])
+                o0 = dff.detect_objects(feats[0])
+                om = dff.detect_objects(feats[mid])
             for tag, obj in [("key", o0["objectness"]), ("prop", om["objectness"])]:
-                m = obj[0,0].detach().cpu().numpy()
-                plt.figure(figsize=(6,6)); plt.imshow(m, vmin=0, vmax=1); plt.colorbar()
-                plt.title(f"Toy head objectness — {tag}"); plt.axis('off'); plt.tight_layout()
-                if args.save_viz_dir: plt.savefig(os.path.join(args.save_viz_dir, f"obj_{tag}.png"), dpi=140); plt.close()
-                else: plt.show()
+                m = obj[0, 0].detach().cpu().numpy()
+                plt.figure(figsize=(6, 6))
+                plt.imshow(m, vmin=0, vmax=1)
+                plt.colorbar()
+                plt.title(f"Toy head objectness — {tag}")
+                plt.axis("off")
+                plt.tight_layout()
+                if args.save_viz_dir:
+                    plt.savefig(
+                        os.path.join(args.save_viz_dir, f"obj_{tag}.png"), dpi=140
+                    )
+                    plt.close()
+                else:
+                    plt.show()
         return
 
     # Plain DFF run (optionally adaptive)
-    process_video(args.video_path, args.key_interval, args.adaptive, args.visualize, args.max_frames, args.save_viz_dir)
+    process_video(
+        args.video_path,
+        args.key_interval,
+        args.adaptive,
+        args.visualize,
+        args.max_frames,
+        args.save_viz_dir,
+    )
+
 
 if __name__ == "__main__":
     main()
-
 
 
 """
