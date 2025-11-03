@@ -113,46 +113,57 @@ def visualize_predictions(models: dict, dataloader, device):
     # 2. Generate predictions
     # 3. Create subplot showing: input, ground truth, prediction
 
-    # Get one batch and take the first sample
-    images, masks = next(iter(dataloader))
-    image, mask = images[0].unsqueeze(0).to(device), masks[0].unsqueeze(0).to(device)
-
-    # Collect predictions from each model
-    preds = {}
-    with torch.no_grad():
-        for name, model in models.items():
-            output = model(image)
-            pred = torch.sigmoid(output)  # > 0.5
-            preds[name] = pred.cpu().squeeze().numpy()
-
+    plt.ion()  # Turn on interactive mode
     cols = max(2, len(models))
-
     fig = plt.figure(figsize=(4 * cols, 6))
-    outer_gs = gridspec.GridSpec(2, 1, height_ratios=[1, 1.2], figure=fig)
 
-    # --- Top row: its own 1x2 grid
-    top_gs = gridspec.GridSpecFromSubplotSpec(1, 2, subplot_spec=outer_gs[0])
+    # Iterate across each image in all the dataloader
+    for images, masks in dataloader:
+        for i in range(len(images)):  # Iterate over samples in each batch
+            image = images[i].unsqueeze(0).to(device)
+            mask = masks[i].unsqueeze(0).to(device)
 
-    ax_img = fig.add_subplot(top_gs[0, 0])
-    ax_img.imshow(image[0].cpu().permute(1, 2, 0) * 0.5 + 0.5)
-    ax_img.set_title("Input Image")
-    ax_img.axis("off")
+            # Collect predictions from each model
+            preds = {}
+            with torch.no_grad():
+                for name, model in models.items():
+                    output = model(image)
+                    pred = torch.sigmoid(output)  # > 0.5
+                    preds[name] = pred.cpu().squeeze().numpy()
 
-    ax_mask = fig.add_subplot(top_gs[0, 1])
-    ax_mask.imshow(mask[0].cpu().squeeze(), cmap="gray")
-    ax_mask.set_title("Ground Truth")
-    ax_mask.axis("off")
+            fig.clf()  # Clear previous plot
 
-    # --- Bottom row: model predictions
-    bottom_gs = gridspec.GridSpecFromSubplotSpec(1, cols, subplot_spec=outer_gs[1])
+            outer_gs = gridspec.GridSpec(2, 1, height_ratios=[1, 1.2], figure=fig)
 
-    for i, (name, pred) in enumerate(preds.items()):
-        ax = fig.add_subplot(bottom_gs[0, i])
-        ax.imshow(pred, cmap="gray")
-        ax.set_title(f"{name.capitalize()}")
-        ax.axis("off")
+            # --- Top row: its own 1x2 grid
+            top_gs = gridspec.GridSpecFromSubplotSpec(1, 2, subplot_spec=outer_gs[0])
 
-    plt.tight_layout()
+            ax_img = fig.add_subplot(top_gs[0, 0])
+            ax_img.imshow(image[0].cpu().permute(1, 2, 0) * 0.5 + 0.5)
+            ax_img.set_title("Input Image")
+            ax_img.axis("off")
+
+            ax_mask = fig.add_subplot(top_gs[0, 1])
+            ax_mask.imshow(mask[0].cpu().squeeze(), cmap="gray")
+            ax_mask.set_title("Ground Truth")
+            ax_mask.axis("off")
+
+            # --- Bottom row: model predictions
+            bottom_gs = gridspec.GridSpecFromSubplotSpec(
+                1, cols, subplot_spec=outer_gs[1]
+            )
+
+            for i, (name, pred) in enumerate(preds.items()):
+                ax = fig.add_subplot(bottom_gs[0, i])
+                ax.imshow(pred, cmap="gray")
+                ax.set_title(f"{name.capitalize()}")
+                ax.axis("off")
+
+            plt.tight_layout()
+            plt.draw()
+            plt.pause(5)  # Pause to view the plot
+
+    plt.ioff()  # Turn off interactive mode
 
 
 def plot_training_curves(train_losses, val_losses, train_ious, val_ious):
