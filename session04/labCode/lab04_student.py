@@ -183,7 +183,8 @@ def visualize_predictions(models: dict, dataloader, device):
 
             for i, (name, pred) in enumerate(preds.items()):
                 ax = fig.add_subplot(bottom_gs[0, i])
-                ax.imshow(pred.squeeze(0), vmin=0, vmax=2)
+                # ax.imshow(pred.squeeze(0), vmin=0, vmax=2)
+                ax.imshow(pred.squeeze(0), cmap="gray")
                 ax.set_title(f"{name.capitalize()}")
                 ax.axis("off")
 
@@ -474,7 +475,7 @@ def analyze_skip_connections():
                 map_location=device,
             )
         )
-
+        print(f"Loaded model for skip mode: {mode}")
     # Create comparison table/plot
     table = PrettyTable()
     table.field_names = [
