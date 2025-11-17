@@ -463,14 +463,14 @@ def analyze_skip_connections():
     config = {
         "batch_size": 16,
         "learning_rate": 0.001,
-        "epochs": 50,
+        "epochs": 1,
         "image_size": 128,
     }
 
     models = {}
 
     # Run experiments for each mode
-    for mode in ["concat", "add", "attention"]:
+    for mode in ["concat", "add", "attention", "none"]:
         results[mode] = main(skip_mode=mode, **config)
         models[mode] = UNet.UNet(in_channels=3, out_channels=3, skipMode=mode).to(
             device

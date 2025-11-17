@@ -141,7 +141,8 @@ class UNet(nn.Module):
         # Process through encoders, save skip connections
         for encoder in self.encoders:
             features, x = encoder(x)
-            skip_connections.append(features)
+            if self.skipMode != "none":
+                skip_connections.append(features)
 
         # Bottleneck
         # Process through bottleneck
@@ -150,8 +151,12 @@ class UNet(nn.Module):
 
         # Decoder path
         # Process through decoders with skip connections
-        for idx, decoder in enumerate(self.decoders):
-            x = decoder(x, skip_connections[idx])
+        if self.skipMode != "none":
+            for idx, decoder in enumerate(self.decoders):
+                x = decoder(x, skip_connections[idx])
+        else:
+            for decoder in self.decoders:
+                x = decoder(x, torch.zeros(1))  # Dummy skip features
 
         # Final layer
         # Apply final convolution
@@ -240,8 +245,16 @@ class FlexibleSkipConnection(nn.Module):
                 decoder_channels + skip_channels, decoder_channels, 3, padding=1
             )
 
-    def forward(self, decoder_features, skip_features):
+        elif mode == "none":
+            # No skip connection - just pass through decoder features
+            pass
 
+    def forward(self, decoder_features, skip_features):
+        # If mode is "none", skip all calculations and just return decoder features
+        if self.mode == "none":
+            return decoder_features
+
+        # For other modes, we need to pad decoder features to match skip features
         diffY = skip_features.size()[2] - decoder_features.size()[2]
         diffX = skip_features.size()[3] - decoder_features.size()[3]
 
