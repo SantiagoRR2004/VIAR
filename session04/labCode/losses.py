@@ -74,15 +74,48 @@ class FocalLoss(nn.Module):
         return loss
 
 
+class MultiClassFocalLoss(nn.Module):
+    """Focal loss for multiclass segmentation"""
+
+    def __init__(self, alpha=0.25, gamma=2.0):
+        super().__init__()
+        self.alpha = alpha
+        self.gamma = gamma
+        self.ce = nn.CrossEntropyLoss(reduction="none")
+
+    def forward(self, pred, target):
+        # pred: logits (B, C, H, W)
+        # target: class indices (B, H, W)
+
+        # Make sure target is long/int64 for gather()
+        # target = target.long()
+
+        # 1. Compute CrossEntropy loss
+        ce_loss = self.ce(pred, target)
+
+        # 2. Get probabilities and calculate p_t
+        probs = torch.softmax(pred, dim=1)
+        # Get probability of correct class for each pixel
+        p_t = probs.gather(1, target.unsqueeze(1)).squeeze(1)
+
+        # 3. Apply focal term: (1-p_t)^gamma
+        focal_weight = (1 - p_t) ** self.gamma
+
+        # 4. Apply alpha weighting and focal term
+        focal_loss = self.alpha * focal_weight * ce_loss
+
+        return focal_loss.mean()
+
+
 class CombinedLoss(nn.Module):
     """Combined loss function"""
 
-    def __init__(self, weights={"ce": 0.5, "dice": 0.5, "focal": 0.0}):
+    def __init__(self, weights={"ce": 0.5, "dice": 0.5, "focal": 0.45}):
         super().__init__()
         # Task 3.3: Initialize component losses
         self.ce_loss = nn.CrossEntropyLoss()
         self.dice_loss = MultiClassDiceLoss()
-        self.focal_loss = FocalLoss()
+        self.focal_loss = MultiClassFocalLoss()
         self.weights = weights
 
     def forward(self, pred, target):
