@@ -379,6 +379,12 @@ def main(
                 )
                 print("Best model saved!")
 
+            # Try to do early stopping
+            if epoch >= 11:
+                if np.mean(val_ious[-10:]) <= np.mean(val_ious[-11:-1]):
+                    print("Early stopping triggered.")
+                    break
+
         training_time = time.time() - start_time
         print(f"Training time: {training_time:.2f} seconds")
 

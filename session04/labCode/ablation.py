@@ -28,7 +28,7 @@ def ablationSkipConnections(addNew: bool, createGraph: bool) -> None:
 
     files = os.listdir(dataFolder)
 
-    variants = ["concat", "add", "attention"]
+    variants = ["concat", "add", "attention", "none"]
 
     config = {
         "batch_size": 16,
