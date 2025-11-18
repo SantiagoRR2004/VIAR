@@ -86,31 +86,31 @@ class MultiClassFocalLoss(nn.Module):
     def forward(self, pred, target):
         # pred: logits (B, C, H, W)
         # target: class indices (B, H, W)
+        if target.dim() == 4:
+            target = target.argmax(dim=1)  # Convert one-hot to class indices
 
-        # Make sure target is long/int64 for gather()
-        # target = target.long()
+        # 1) Cross entropy (per pixel)
+        ce_loss = self.ce(pred, target)  # shape (B,H,W)
 
-        # 1. Compute CrossEntropy loss
-        ce_loss = self.ce(pred, target)
+        # 2) Softmax probabilities
+        probs = torch.softmax(pred, dim=1)  # (B,C,H,W)
 
-        # 2. Get probabilities and calculate p_t
-        probs = torch.softmax(pred, dim=1)
-        # Get probability of correct class for each pixel
-        p_t = probs.gather(1, target.unsqueeze(1)).squeeze(1)
+        # 3) Probabilidad de la clase correcta
+        p_t = probs.gather(1, target.unsqueeze(1)).squeeze(1)  # (B,H,W)
 
-        # 3. Apply focal term: (1-p_t)^gamma
+        # 4) (1 - p_t)^gamma
         focal_weight = (1 - p_t) ** self.gamma
 
-        # 4. Apply alpha weighting and focal term
-        focal_loss = self.alpha * focal_weight * ce_loss
+        # 5) Alpha weight
+        loss = self.alpha * focal_weight * ce_loss
 
-        return focal_loss.mean()
+        return loss.mean()
 
 
 class CombinedLoss(nn.Module):
     """Combined loss function"""
 
-    def __init__(self, weights={"ce": 0.5, "dice": 0.5, "focal": 0.45}):
+    def __init__(self, weights={"ce": 0.1, "dice": 0.3, "focal": 0.60}):
         super().__init__()
         # Task 3.3: Initialize component losses
         self.ce_loss = nn.CrossEntropyLoss()
@@ -125,6 +125,6 @@ class CombinedLoss(nn.Module):
         # Add each loss component with its weight
         total_loss += self.weights.get("ce", 0) * self.ce_loss(pred, target)
         total_loss += self.weights.get("dice", 0) * self.dice_loss(pred, target)
-        # total_loss += self.weights.get("focal", 0) * self.focal_loss(pred, target)
+        total_loss += self.weights.get("focal", 0) * self.focal_loss(pred, target)
 
         return total_loss
