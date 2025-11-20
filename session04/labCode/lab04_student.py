@@ -412,6 +412,9 @@ def main(
                 np.array(val_ious),
             )
 
+        # Plot training curves
+        plot_training_curves(train_losses, val_losses, train_ious, val_ious)
+
         # Clear optimizer gradients
         optimizer.zero_grad()
 
@@ -442,9 +445,6 @@ def main(
         memory_usage = torch.cuda.max_memory_allocated() / 1024**2  # MB
     else:
         memory_usage = 0.0
-
-    # Plot training curves
-    plot_training_curves(train_losses, val_losses, train_ious, val_ious)
 
     print("Training complete!")
 
@@ -515,7 +515,11 @@ def analyze_skip_connections():
                 metrics["training_time"],
             ]
         )
-    print(table)
+    """
+    There is no need to show these results because they will
+    be graphed in greater detail in the ablation study.
+    """
+    # print(table)
 
     visualize_predictions(models, get_dataloaders(config)[1], device)
 
