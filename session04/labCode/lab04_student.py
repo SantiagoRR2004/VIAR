@@ -152,13 +152,19 @@ def visualize_predictions(models: dict, dataloader, device):
             image = images[i].unsqueeze(0).to(device)
             mask = masks[i].unsqueeze(0).to(device)
 
+            # Process mask to one-hot encoding for IoU calculation
+            mask_one_hot = process_batch_masks(mask)
+
             # Collect predictions from each model
             preds = {}
+            ious = {}
             with torch.no_grad():
                 for name, model in models.items():
                     output = model(image)
                     pred = torch.argmax(torch.softmax(output, dim=1), dim=1)
                     preds[name] = pred.cpu().numpy()
+                    # Calculate IoU for this prediction
+                    ious[name] = calculate_iou(output, mask_one_hot.to(device))
 
             fig.clf()  # Clear previous plot
 
@@ -186,7 +192,7 @@ def visualize_predictions(models: dict, dataloader, device):
                 ax = fig.add_subplot(bottom_gs[0, i])
                 # ax.imshow(pred.squeeze(0), vmin=0, vmax=2)
                 ax.imshow(pred.squeeze(0), cmap="gray")
-                ax.set_title(f"{name.capitalize()}")
+                ax.set_title(f"{name.capitalize()}\nIoU: {ious[name]:.4f}")
                 ax.axis("off")
 
             plt.tight_layout()
@@ -476,7 +482,7 @@ def analyze_skip_connections():
     models = {}
 
     # Run experiments for each mode
-    for mode in ["concat", "add", "attention", "none"]:
+    for mode in ["concat", "add", "attention"]:
         results[mode] = main(skip_mode=mode, **config)
         models[mode] = UNet.UNet(in_channels=3, out_channels=3, skipMode=mode).to(
             device
