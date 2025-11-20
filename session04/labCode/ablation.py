@@ -148,6 +148,54 @@ def ablationSkipConnections(addNew: bool, createGraph: bool) -> None:
         )
         plt.tight_layout()
 
+        # Show the average train_ious and val_ious - one figure with 4 subplots
+        fig, axes = plt.subplots(2, 2, figsize=(16, 12))
+        axes = axes.flatten()
+
+        for idx, v in enumerate(variants):
+            ax = axes[idx]
+
+            allTrainIous = [run["train_ious"] for run in data[v]]
+            allValIous = [run["val_ious"] for run in data[v]]
+
+            # Plot individual runs with transparency
+            for i, ious in enumerate(allTrainIous):
+                ax.plot(ious, color="blue", alpha=0.2, linewidth=0.8)
+            for i, ious in enumerate(allValIous):
+                ax.plot(ious, color="orange", alpha=0.2, linewidth=0.8)
+
+            # Find the maximum number of epochs across all runs
+            maxEpochsTrain = max(len(ious) for ious in allTrainIous)
+            maxEpochsVal = max(len(ious) for ious in allValIous)
+
+            # Calculate mean for each epoch, considering only runs that have that epoch
+            avgTrainIous = []
+            for epoch in range(maxEpochsTrain):
+                epochIous = [ious[epoch] for ious in allTrainIous if len(ious) > epoch]
+                avgTrainIous.append(np.mean(epochIous))
+
+            avgValIous = []
+            for epoch in range(maxEpochsVal):
+                epochIous = [ious[epoch] for ious in allValIous if len(ious) > epoch]
+                avgValIous.append(np.mean(epochIous))
+
+            # Plot averages with solid lines
+            ax.plot(avgTrainIous, label=f"Avg Train", color="blue", linewidth=2)
+            ax.plot(avgValIous, label=f"Avg Val", color="orange", linewidth=2)
+
+            ax.set_title(f"{v.capitalize()} Variant", fontsize=12, fontweight="bold")
+            ax.set_xlabel("Epochs")
+            ax.set_ylabel("IoU")
+            ax.legend()
+            ax.grid(True, alpha=0.3)
+
+        fig.suptitle(
+            "Training and Validation IoU - Skip Connection Variants",
+            fontsize=16,
+            fontweight="bold",
+        )
+        plt.tight_layout()
+
 
 def main(addNew: bool = False, createGraph: bool = True) -> None:
     """
