@@ -96,6 +96,58 @@ def ablationSkipConnections(addNew: bool, createGraph: bool) -> None:
         plt.title("Memory Usage by Skip Connection Variant")
         plt.ylabel("Memory Usage (MB)")
 
+        # Show the average train_losses and val_losses - one figure with 4 subplots
+        fig, axes = plt.subplots(2, 2, figsize=(16, 12))
+        axes = axes.flatten()
+
+        for idx, v in enumerate(variants):
+            ax = axes[idx]
+
+            allTrainLosses = [run["train_losses"] for run in data[v]]
+            allValLosses = [run["val_losses"] for run in data[v]]
+
+            # Plot individual runs with transparency
+            for i, losses in enumerate(allTrainLosses):
+                ax.plot(losses, color="blue", alpha=0.2, linewidth=0.8)
+            for i, losses in enumerate(allValLosses):
+                ax.plot(losses, color="orange", alpha=0.2, linewidth=0.8)
+
+            # Find the maximum number of epochs across all runs
+            maxEpochsTrain = max(len(losses) for losses in allTrainLosses)
+            maxEpochsVal = max(len(losses) for losses in allValLosses)
+
+            # Calculate mean for each epoch, considering only runs that have that epoch
+            avgTrainLosses = []
+            for epoch in range(maxEpochsTrain):
+                epochLosses = [
+                    losses[epoch] for losses in allTrainLosses if len(losses) > epoch
+                ]
+                avgTrainLosses.append(np.mean(epochLosses))
+
+            avgValLosses = []
+            for epoch in range(maxEpochsVal):
+                epochLosses = [
+                    losses[epoch] for losses in allValLosses if len(losses) > epoch
+                ]
+                avgValLosses.append(np.mean(epochLosses))
+
+            # Plot averages with solid lines
+            ax.plot(avgTrainLosses, label=f"Avg Train", color="blue", linewidth=2)
+            ax.plot(avgValLosses, label=f"Avg Val", color="orange", linewidth=2)
+
+            ax.set_title(f"{v.capitalize()} Variant", fontsize=12, fontweight="bold")
+            ax.set_xlabel("Epochs")
+            ax.set_ylabel("Loss")
+            ax.legend()
+            ax.grid(True, alpha=0.3)
+
+        fig.suptitle(
+            "Training and Validation Loss - Skip Connection Variants",
+            fontsize=16,
+            fontweight="bold",
+        )
+        plt.tight_layout()
+
 
 def main(addNew: bool = False, createGraph: bool = True) -> None:
     """
