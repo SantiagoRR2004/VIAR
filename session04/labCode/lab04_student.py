@@ -289,6 +289,7 @@ def main(
     skip_mode: str = "concat",
     storeData: bool = True,
     generator=None,
+    features: list = [64, 128, 256, 512],
 ):
     # Hyperparameters
     config = {
@@ -316,7 +317,7 @@ def main(
         and storeData
     ):
         model = UNet.UNet(
-            in_channels=3, out_channels=3, skipMode=config["skip_mode"]
+            in_channels=3, out_channels=3, skipMode=config["skip_mode"], features=features
         ).to(device)
         model.load_state_dict(
             torch.load(
@@ -346,7 +347,7 @@ def main(
 
     else:
         model = UNet.UNet(
-            in_channels=3, out_channels=3, skipMode=config["skip_mode"]
+            in_channels=3, out_channels=3, skipMode=config["skip_mode"], features=features
         ).to(device)
 
         # Setup optimizer

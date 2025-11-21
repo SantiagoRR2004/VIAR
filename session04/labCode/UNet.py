@@ -34,12 +34,15 @@ class EncoderBlock(nn.Module):
         # Task 1.1: Initialize layers
         # You need: DoubleConv and MaxPool2d
         self.conv = DoubleConv(in_channels, out_channels)
-        self.pool = nn.MaxPool2d(kernel_size=2)
+        if in_channels != out_channels:
+            self.pool = nn.MaxPool2d(kernel_size=2)
 
     def forward(self, x):
         # Task 1.1: Implement forward pass
         # Return both: features before pooling (for skip connection) and after pooling
         features = self.conv(x)
+        if not hasattr(self, "pool"):
+            return features, features
         pooled = self.pool(features)
         return features, pooled
 
@@ -58,16 +61,17 @@ class DecoderBlock(nn.Module):
         self.upsampling = upsampling
         self.skipType = skipType
 
-        # Task 1.2: Initialize upsampling layer
-        if upsampling == "transpose":
-            self.up = nn.ConvTranspose2d(
-                in_channels, out_channels, kernel_size=2, stride=2
-            )
-        else:  # bilinear
-            self.up = nn.Sequential(
-                nn.Upsample(scale_factor=2, mode="bilinear", align_corners=True),
-                nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1),
-            )
+        if in_channels != out_channels:
+            # Task 1.2: Initialize upsampling layer
+            if upsampling == "transpose":
+                self.up = nn.ConvTranspose2d(
+                    in_channels, out_channels, kernel_size=2, stride=2
+                )
+            else:  # bilinear
+                self.up = nn.Sequential(
+                    nn.Upsample(scale_factor=2, mode="bilinear", align_corners=True),
+                    nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1),
+                )
 
         # Task 1.2: Initialize double convolution
         self.conv = DoubleConv(skipType.out_channels, out_channels)
@@ -78,7 +82,8 @@ class DecoderBlock(nn.Module):
         # 2. Handle dimension mismatch if necessary (crop or pad)
         # 3. Concatenate with skip_features
         # 4. Apply double convolution
-        x = self.up(x)
+        if hasattr(self, "up"):
+            x = self.up(x)
 
         x = self.skipType(x, skip_features)
 
