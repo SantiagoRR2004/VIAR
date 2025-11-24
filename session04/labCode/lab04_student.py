@@ -343,6 +343,9 @@ def main(
         os.path.exists(
             os.path.join(currentDirectory, folder_name, "best_unet_model.pth")
         )
+        and os.path.exists(
+            os.path.join(currentDirectory, folder_name, "train_losses.npy")
+        )
         and storeData
     ):
         model = UNet.UNet(
@@ -357,21 +360,16 @@ def main(
                 map_location=device,
             )
         )
-        if os.path.exists(
+        train_losses = np.load(
             os.path.join(currentDirectory, folder_name, "train_losses.npy")
-        ):
-            train_losses = np.load(
-                os.path.join(currentDirectory, folder_name, "train_losses.npy")
-            )
-            val_losses = np.load(
-                os.path.join(currentDirectory, folder_name, "val_losses.npy")
-            )
-            train_ious = np.load(
-                os.path.join(currentDirectory, folder_name, "train_ious.npy")
-            )
-            val_ious = np.load(
-                os.path.join(currentDirectory, folder_name, "val_ious.npy")
-            )
+        )
+        val_losses = np.load(
+            os.path.join(currentDirectory, folder_name, "val_losses.npy")
+        )
+        train_ious = np.load(
+            os.path.join(currentDirectory, folder_name, "train_ious.npy")
+        )
+        val_ious = np.load(os.path.join(currentDirectory, folder_name, "val_ious.npy"))
 
         training_time = 0
 
@@ -486,8 +484,6 @@ def main(
         memory_usage = torch.cuda.max_memory_allocated() / 1024**2  # MB
     else:
         memory_usage = 0.0
-
-    print("Training complete!")
 
     return {
         "train_losses": train_losses,
