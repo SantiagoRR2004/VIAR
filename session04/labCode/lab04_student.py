@@ -144,8 +144,13 @@ def visualize_predictions(models: dict, dataloader, device):
     # 3. Create subplot showing: input, ground truth, prediction
 
     plt.ion()  # Turn on interactive mode
-    cols = max(2, len(models))
-    fig = plt.figure(figsize=(4 * cols, 6))
+
+    # Separate normal and bigger models
+    normalModels = {k: v for k, v in models.items() if "Bigger" not in k}
+    biggerModels = {k: v for k, v in models.items() if "Bigger" in k}
+
+    cols = max(2, len(normalModels))
+    fig = plt.figure(figsize=(4 * cols, 9))
 
     # Iterate across each image in all the dataloader
     for images, masks in dataloader:
@@ -169,7 +174,7 @@ def visualize_predictions(models: dict, dataloader, device):
 
             fig.clf()  # Clear previous plot
 
-            outer_gs = gridspec.GridSpec(2, 1, height_ratios=[1, 1.2], figure=fig)
+            outer_gs = gridspec.GridSpec(3, 1, height_ratios=[1, 1.2, 1.2], figure=fig)
 
             # --- Top row: its own 1x2 grid
             top_gs = gridspec.GridSpecFromSubplotSpec(1, 2, subplot_spec=outer_gs[0])
@@ -184,16 +189,30 @@ def visualize_predictions(models: dict, dataloader, device):
             ax_mask.set_title("Ground Truth")
             ax_mask.axis("off")
 
-            # --- Bottom row: model predictions
-            bottom_gs = gridspec.GridSpecFromSubplotSpec(
+            # --- Middle row: normal model predictions
+            middle_gs = gridspec.GridSpecFromSubplotSpec(
                 1, cols, subplot_spec=outer_gs[1]
             )
 
-            for i, (name, pred) in enumerate(preds.items()):
-                ax = fig.add_subplot(bottom_gs[0, i])
-                # ax.imshow(pred.squeeze(0), vmin=0, vmax=2)
+            for idx, (name, pred) in enumerate(
+                [(k, preds[k]) for k in normalModels.keys()]
+            ):
+                ax = fig.add_subplot(middle_gs[0, idx])
                 ax.imshow(pred.squeeze(0), cmap="gray")
-                ax.set_title(f"{name.capitalize()}\nIoU: {ious[name]:.4f}")
+                ax.set_title(f"{name.title()}\nIoU: {ious[name]:.4f}")
+                ax.axis("off")
+
+            # --- Bottom row: bigger model predictions
+            bottom_gs = gridspec.GridSpecFromSubplotSpec(
+                1, cols, subplot_spec=outer_gs[2]
+            )
+
+            for idx, (name, pred) in enumerate(
+                [(k, preds[k]) for k in biggerModels.keys()]
+            ):
+                ax = fig.add_subplot(bottom_gs[0, idx])
+                ax.imshow(pred.squeeze(0), cmap="gray")
+                ax.set_title(f"{name.title()}\nIoU: {ious[name]:.4f}")
                 ax.axis("off")
 
             plt.tight_layout()
@@ -484,7 +503,7 @@ def main(
 # ================== Analysis Functions ==================
 
 
-def analyze_skip_connections(features: list = [64, 128, 256, 512]):
+def analyze_skip_connections():
     """Compare different skip connection strategies"""
     # Task 2.4: Implement comparison
     # 1. Train models with different skip modes
