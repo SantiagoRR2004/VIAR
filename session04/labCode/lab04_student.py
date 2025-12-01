@@ -303,7 +303,7 @@ def get_dataloaders(config: dict):
 def main(
     batch_size: int = 16,
     learning_rate: float = 0.001,
-    epochs: int = 1,
+    epochs: int = 1000,
     image_size: int = 128,
     skip_mode: str = "concat",
     storeData: bool = True,
@@ -519,7 +519,7 @@ def analyze_skip_connections():
     config = {
         "batch_size": 16,
         "learning_rate": 0.001,
-        "epochs": 50,
+        "epochs": 1000,
         "image_size": 128,
         "generator": generator,
     }

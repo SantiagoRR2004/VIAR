@@ -75,7 +75,7 @@ def ablationSkipConnections(addNew: bool, createGraph: bool) -> dict:
     config = {
         "batch_size": 16,
         "learning_rate": 0.001,
-        "epochs": 50,
+        "epochs": 1000,
         "image_size": 128,
         "storeData": False,
         "features": [64, 128, 256, 512],
@@ -287,7 +287,7 @@ def ablationSkipConnectionsBigger(addNew: bool, createGraph: bool) -> dict:
     config = {
         "batch_size": 16,
         "learning_rate": 0.001,
-        "epochs": 50,
+        "epochs": 1000,
         "image_size": 128,
         "storeData": False,
         "features": [64, 64, 128, 128, 256, 256, 512, 512],
