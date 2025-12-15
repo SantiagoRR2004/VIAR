@@ -51,3 +51,6 @@ timm>=0.6.0  # Optional: pretrained models for comparison
 
 prettytable
 pycocotools
+#Session 13
+gymnasium[classic-control]
+pip install gymnasium==0.28.1
