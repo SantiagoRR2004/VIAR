@@ -38,16 +38,17 @@ jobs:
         run: |
           npm install --global prettier
 
-      - name: Format JSON files with Prettier
+      - name: Format files with Prettier
         run: |
-          prettier --write "**/*.json" --ignore-unknown
+          prettier --write . || true
 
       - name: Commit and push changes
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          if ! git diff --quiet; then
-            git add .
+          git add .
+          git reset .github/workflows/
+          if ! git diff --cached --quiet; then
             git commit -m "chore: Auto-format code with Black and Prettier [GitHub Action]"
             git push
           else
