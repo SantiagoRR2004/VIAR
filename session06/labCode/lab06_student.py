@@ -16,7 +16,6 @@ from models.fcos import FCOSDetector
 from config import config
 import torch
 
-
 # ============================================================================
 # TEST FUNCTIONS (Use these to verify your implementations)
 # ============================================================================

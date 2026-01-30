@@ -762,8 +762,7 @@ def main():
     print("\n" + "=" * 60)
     print("Key Takeaways:")
     print("=" * 60)
-    print(
-        """
+    print("""
 1. VAE compresses 64x64x3 images to 32-dimensional latent codes
 2. MDN-RNN predicts distribution over next latent states
 3. Together they form a "world model" that can imagine futures
@@ -779,8 +778,7 @@ This architecture inspired:
 - Dreamer (2020): Actor-critic in latent space
 - DreamerV2 (2021): Discrete latents
 - DreamerV3 (2023): Cross-domain generalization
-    """
-    )
+    """)
 
 
 if __name__ == "__main__":

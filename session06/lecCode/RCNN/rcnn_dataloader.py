@@ -382,8 +382,7 @@ def demo_custom():
 # ==================== QUICK START GUIDE ====================
 
 if __name__ == "__main__":
-    print(
-        """
+    print("""
     DATASET RECOMMENDATIONS FOR R-CNN DEMO:
     
     1. PASCAL VOC 2007 (BEST - matches original paper)
@@ -416,8 +415,7 @@ if __name__ == "__main__":
     RECOMMENDATION FOR LECTURE:
     - Start with Option 3 (synthetic) to show algorithm
     - Then show Option 1 (PASCAL VOC) for real results
-    """
-    )
+    """)
 
     # Quick demo with synthetic data
     print("\n" + "=" * 60)

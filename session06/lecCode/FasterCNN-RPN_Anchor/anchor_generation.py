@@ -341,8 +341,7 @@ def demo_anchor_properties():
     print("\n" + "=" * 70)
     print("Why Anchors Matter for Faster R-CNN:")
     print("=" * 70)
-    print(
-        """
+    print("""
 1. MULTI-SCALE DETECTION:
    - Different scales (8, 16, 32) detect small, medium, large objects
    - No need for image pyramid!
@@ -360,8 +359,7 @@ def demo_anchor_properties():
    - Pre-defined templates
    - RPN just predicts: "Is there an object?" and "How to adjust?"
    - Much faster than sliding windows or selective search
-    """
-    )
+    """)
 
     print("\n" + "=" * 70)
     print("Demo Complete!")

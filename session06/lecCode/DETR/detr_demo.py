@@ -15,7 +15,6 @@ from scipy.optimize import linear_sum_assignment
 from typing import List, Tuple, Dict
 import Utils
 
-
 # ============================================================================
 # POSITIONAL ENCODING
 # ============================================================================

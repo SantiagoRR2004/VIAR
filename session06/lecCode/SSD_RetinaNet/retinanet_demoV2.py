@@ -30,7 +30,6 @@ import matplotlib.patches as patches
 from typing import List, Tuple
 import Utils
 
-
 # ============================================================================
 # SYNTHETIC DATASET (Geometric Shapes)
 # ============================================================================

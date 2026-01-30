@@ -12,6 +12,7 @@ Outputs (into ./figs):
 Usage:
   python opencv_dft_filters.py --input path/to/image.jpg --R 40 --notch "0,70,8" "0,-70,8" --montage
 """
+
 import argparse, os
 from pathlib import Path
 import numpy as np

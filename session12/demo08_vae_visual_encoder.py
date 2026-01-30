@@ -544,8 +544,7 @@ def main():
     print("\n" + "=" * 60)
     print("Key Takeaways:")
     print("=" * 60)
-    print(
-        f"""
+    print(f"""
 1. VAE learns to compress {64*64*3}-dim images to {latent_dim}-dim latent codes
 2. The latent space is smooth (nearby points = similar images)
 3. Can generate new images by sampling z ~ N(0, I)
@@ -561,8 +560,7 @@ Applications in Visual RL:
 - Dreamer: Learns in latent space for efficiency
 - Goal-conditioned RL: Goals specified in latent space
 - Model-based RL: Planning in compressed state space
-    """
-    )
+    """)
 
 
 if __name__ == "__main__":

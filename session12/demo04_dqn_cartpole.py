@@ -527,8 +527,7 @@ if __name__ == "__main__":
     print("\n" + "=" * 60)
     print("Key Takeaways:")
     print("=" * 60)
-    print(
-        """
+    print("""
 1. DQN uses a neural network to approximate Q(s, a)
 2. Experience replay breaks temporal correlations in training data
 3. Target network provides stable bootstrap targets
@@ -541,5 +540,4 @@ Key equations:
 - Target network update: θ⁻ ← θ every C steps
 
 Next: Demo 05 shows DQN from pixels (visual observations)
-    """
-    )
+    """)

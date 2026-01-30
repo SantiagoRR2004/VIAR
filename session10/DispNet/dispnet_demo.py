@@ -2,7 +2,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-
 # ---------- Small helper blocks ----------
 
 
@@ -204,7 +203,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import Dataset, DataLoader
-
 
 # ==================================================================
 # Stereo synthetic dataset (matches generate_synthetic_stereo_depth.py)

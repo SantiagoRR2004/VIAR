@@ -42,7 +42,6 @@ import torchvision as tv
 import torchvision.transforms.functional as TF
 import matplotlib.pyplot as plt
 
-
 # ----------------------------
 # Utilities
 # ----------------------------

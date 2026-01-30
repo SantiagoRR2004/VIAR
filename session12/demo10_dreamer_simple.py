@@ -819,8 +819,7 @@ if __name__ == "__main__":
     print("\n" + "=" * 60)
     print("Key Takeaways:")
     print("=" * 60)
-    print(
-        """
+    print("""
 Dreamer Architecture:
 1. World Model (RSSM):
    - Deterministic state h: Long-term memory (GRU)
@@ -848,5 +847,4 @@ L = E[reconstruction + reward + KL(posterior || prior)]
 
 Actor Objective:
 Maximize: E[Σ γ^t r_t] estimated via imagined rollouts
-    """
-    )
+    """)

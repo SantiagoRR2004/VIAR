@@ -19,7 +19,6 @@ import argparse
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 
-
 # ============================================================================
 # Positional Encoding
 # ============================================================================

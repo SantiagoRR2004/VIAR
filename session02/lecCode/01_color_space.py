@@ -1,6 +1,5 @@
 import numpy as np, cv2, os
 
-
 currentDirectory = os.path.dirname(os.path.abspath(__file__))
 
 os.makedirs(os.path.join(currentDirectory, "imgs"), exist_ok=True)

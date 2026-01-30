@@ -450,8 +450,7 @@ def demo_faster_rcnn():
 
     print("\n4. Evolution Comparison")
     print("-" * 70)
-    print(
-        """
+    print("""
     R-CNN:       Selective Search (hand-crafted) → CNN → SVM
     Fast R-CNN:  Selective Search (hand-crafted) → Shared CNN → FC
     Faster R-CNN: RPN (learned!) → Shared CNN → FC
@@ -460,8 +459,7 @@ def demo_faster_rcnn():
     - End-to-end trainable
     - Faster proposal generation
     - Better proposals (learned from data)
-    """
-    )
+    """)
 
     print("\n5. Computational Comparison")
     print("-" * 70)

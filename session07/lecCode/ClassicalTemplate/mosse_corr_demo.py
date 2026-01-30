@@ -91,7 +91,7 @@ class MOSSETracker:
         Z = self._fft2(x)
         R = Z * self.H  # frequency-domain correlation
         r = np.real(self._ifft2(R))
-        (dy, dx) = np.unravel_index(np.argmax(r), r.shape)
+        dy, dx = np.unravel_index(np.argmax(r), r.shape)
 
         # Convert peak position to offset from center
         h, w = r.shape

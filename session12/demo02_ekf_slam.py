@@ -600,8 +600,7 @@ if __name__ == "__main__":
     print("\n" + "=" * 60)
     print("Key Takeaways:")
     print("=" * 60)
-    print(
-        """
+    print("""
 1. EKF-SLAM maintains a joint state of robot pose and all landmarks
 2. The covariance matrix captures uncertainty AND correlations
 3. Observing a landmark improves estimates of ALL correlated states
@@ -617,5 +616,4 @@ Modern approaches use:
 - Particle filters (FastSLAM)
 - Graph-based optimization (g2o, GTSAM)
 - Deep learning (Neural SLAM - Lecture 12 Part IV)
-    """
-    )
+    """)

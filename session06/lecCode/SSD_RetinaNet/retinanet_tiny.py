@@ -6,6 +6,7 @@ RetinaNet (Simplified) — Tiny, educational implementation for synthetic shapes
 - Focal loss (gamma=2, alpha=0.25), sigmoid per class (no background class)
 - Smooth L1 for box regression (educational; IoU losses are also common)
 """
+
 import torch, torch.nn as nn, torch.nn.functional as F, torch.optim as optim
 from torch.utils.data import Dataset, DataLoader
 import numpy as np, matplotlib.pyplot as plt, matplotlib.patches as patches

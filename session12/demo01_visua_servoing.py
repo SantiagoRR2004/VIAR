@@ -523,8 +523,7 @@ if __name__ == "__main__":
     print("\n" + "=" * 60)
     print("Key Takeaways:")
     print("=" * 60)
-    print(
-        """
+    print("""
 1. IBVS controls the camera directly in image feature space
 2. The interaction matrix (image Jacobian) maps camera velocity to feature velocity
 3. The control law v = -λ L⁺ e minimizes feature error exponentially
@@ -533,5 +532,4 @@ if __name__ == "__main__":
 
 This classical approach was dominant in robotics before deep learning.
 Modern approaches (Lecture 13) learn policies end-to-end from pixels.
-    """
-    )
+    """)

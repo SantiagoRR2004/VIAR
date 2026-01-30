@@ -7,7 +7,6 @@ from torchvision.utils import save_image
 import matplotlib.pyplot as plt
 import Utils
 
-
 currentDirectory = os.path.dirname(os.path.abspath(__file__))
 
 

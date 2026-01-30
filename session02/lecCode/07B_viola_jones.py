@@ -24,6 +24,7 @@ Usage
   # Tweak params
   python viola_jones_demo.py --input path.jpg --scale 1.1 --neighbors 3 --minsize 24 24 --equalize
 """
+
 import argparse
 from pathlib import Path
 import time

@@ -33,7 +33,6 @@ sys.path.append(str(Path(__file__).parent.parent))
 from utils.stereo_utils import disparity_to_depth, soft_argmin
 from utils.visualization import colorize_depth, save_depth_visualization
 
-
 # ================================================================
 # Dataset: synthetic stereo (left/right/disp) like your other demos
 # ================================================================

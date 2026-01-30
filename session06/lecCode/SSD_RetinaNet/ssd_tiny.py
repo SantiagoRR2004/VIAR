@@ -7,6 +7,7 @@ SSD (Simplified) — Tiny, educational implementation for synthetic shapes
 - Loss: Smooth L1 (loc) + CrossEntropy (cls) with Hard-Negative Mining (3:1)
 - Decode + NMS + visualization
 """
+
 import torch, torch.nn as nn, torch.nn.functional as F, torch.optim as optim
 from torch.utils.data import Dataset, DataLoader
 import numpy as np, matplotlib.pyplot as plt, matplotlib.patches as patches

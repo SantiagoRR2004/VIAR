@@ -533,8 +533,7 @@ if __name__ == "__main__":
     print("\n" + "=" * 60)
     print("Key Takeaways:")
     print("=" * 60)
-    print(
-        """
+    print("""
 1. Particles represent belief as a set of weighted samples
 2. Can represent multi-modal distributions (unlike EKF)
 3. Prediction: Move particles with motion model + noise
@@ -554,5 +553,4 @@ Disadvantages:
 This led to:
 - FastSLAM: Particle filter for poses, EKF for landmarks
 - Modern neural approaches that learn observation models
-    """
-    )
+    """)

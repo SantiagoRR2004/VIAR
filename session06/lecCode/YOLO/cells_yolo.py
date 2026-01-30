@@ -588,8 +588,7 @@ def demo_anchor_properties():
     print("\n" + "=" * 70)
     print("Why Anchors Matter for Faster R-CNN:")
     print("=" * 70)
-    print(
-        """
+    print("""
 1) MULTI-SCALE & MULTI-SHAPE:
    - Scales (8,16,32) and ratios (0.5,1,2) cover size/shape diversity.
 
@@ -603,8 +602,7 @@ def demo_anchor_properties():
 4) CONNECTION TO YOLO:
    - Same lattice as YOLO's S×S grid; YOLOv2/3 attach anchors per cell,
      while YOLOv1 regresses boxes directly from the cell without priors.
-    """
-    )
+    """)
 
     print("\nDemo Complete!")
     print("=" * 70)
