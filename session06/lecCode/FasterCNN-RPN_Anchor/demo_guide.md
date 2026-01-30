@@ -3,11 +3,13 @@
 ## 📚 Understanding the Evolution
 
 ### The Story So Far:
+
 1. **R-CNN** (2014): Selective Search → CNN (slow, 2000 CNN passes)
 2. **Fast R-CNN** (2015): Selective Search → Shared CNN (10× faster, still uses Selective Search)
 3. **Faster R-CNN** (2015): **RPN** → Shared CNN (200× faster proposals!)
 
 ### The Key Innovation: RPN (Region Proposal Network)
+
 - Replaces hand-crafted Selective Search with **learned proposals**
 - Uses **anchors** as templates at multiple scales/ratios
 - Shares CNN features (no separate proposal generation)
@@ -29,17 +31,20 @@ demo_anchor_properties()
 ```
 
 **What students will see:**
+
 1. Base anchor templates (9 templates: 3 scales × 3 ratios)
 2. Anchors tiled across image (1,764 total for 14×14 feature map)
 3. Visualizations showing multi-scale, multi-shape coverage
 
 **Key Teaching Points:**
+
 - "Anchors are pre-defined boxes at different scales and shapes"
 - "At each location, we place 9 candidate boxes"
 - "RPN's job: decide which anchors contain objects"
 - "No image pyramid needed - anchors handle multiple scales!"
 
 **Generated Files:**
+
 - `base_anchors.pdf` - Show base anchor templates
 - `anchors_on_image.pdf` - Show tiling across image
 
@@ -57,6 +62,7 @@ demo_faster_rcnn()
 ```
 
 **What students will see:**
+
 ```
 RPN Training:
   Epoch 1: Total=1.8234, Cls=1.2156, Reg=0.6078
@@ -68,12 +74,14 @@ Inference:
 ```
 
 **Key Teaching Points:**
+
 - "RPN has 2 jobs: objectness + box refinement"
 - "Objectness: Is there an object at this anchor?"
 - "Box refinement: How should we adjust the anchor?"
 - "Training uses IoU thresholds (>0.7 positive, <0.3 negative)"
 
 **Architecture Diagram on Board:**
+
 ```
 Input Image
     ↓
@@ -165,16 +173,19 @@ model = FasterRCNN(num_classes=20)
 ## 📊 Visualizations to Show
 
 ### 1. Anchor Templates (`base_anchors.pdf`)
+
 - 9 boxes at origin showing different scales/ratios
 - Label each with scale and ratio
 - **Point out:** "These are templates, copied to every location"
 
 ### 2. Anchors on Image (`anchors_on_image.pdf`)
+
 - Left panel: 9 anchors at one location
 - Right panel: Sample across entire image
 - **Point out:** "Dense coverage ensures no object is missed"
 
 ### 3. Architecture Comparison (draw on board)
+
 ```
 R-CNN:       [Image] → Selective Search → [CNN ×2000]
 Fast R-CNN:  [Image] → Selective Search → [Shared CNN] → RoI Pool
@@ -188,18 +199,23 @@ Faster R-CNN:[Image] → [Shared CNN] → RPN → RoI Pool
 ## 🔧 Demo Scripts
 
 ### Quick Anchor Demo (5 min)
+
 ```bash
 python anchor_generation_demo.py
 ```
+
 Shows: Base anchors, tiling, statistics
 
 ### Full RPN Demo (5 min)
+
 ```bash
 python rpn_faster_rcnn.py
 ```
+
 Shows: RPN training, proposal generation, comparison
 
 ### Combined Demo (10 min)
+
 ```python
 # In Python/Jupyter
 from anchor_generation_demo import AnchorGenerator
@@ -220,23 +236,27 @@ model = FasterRCNN(num_classes=20)
 ## 💡 Key Concepts to Emphasize
 
 ### 1. **Why Anchors?**
+
 - **Problem**: Objects have different sizes and shapes
 - **Solution**: Put multiple templates at each location
 - **Benefit**: RPN just needs to say "yes/no" and "adjust slightly"
 
 ### 2. **Anchor Parameters**
+
 - **Scales [8, 16, 32]**: Handle small, medium, large objects
 - **Ratios [0.5, 1.0, 2.0]**: Handle tall, square, wide objects
 - **Stride 16**: Feature map downsampling factor
 - **Total per location**: 3 scales × 3 ratios = 9 anchors
 
 ### 3. **RPN Training**
+
 - **Positive anchors**: IoU > 0.7 with any GT box
 - **Negative anchors**: IoU < 0.3 with all GT boxes
 - **Neutral anchors**: 0.3 ≤ IoU ≤ 0.7 (ignored)
 - **Mini-batch**: 256 anchors (128 pos + 128 neg)
 
 ### 4. **RPN Output**
+
 - **Objectness**: Binary classification (object vs background)
 - **Box deltas**: 4 values (tx, ty, tw, th) to refine anchor
 - **Same parameterization** as Fast R-CNN bbox regression
@@ -246,20 +266,26 @@ model = FasterRCNN(num_classes=20)
 ## 🎓 Student Questions & Answers
 
 ### Q: "Why do we need anchors? Can't we just predict boxes directly?"
+
 **A:** We could (that's what YOLO does), but anchors help training:
+
 - Provide good initial guesses
 - Reduce the learning problem (predict small adjustments, not full boxes)
 - Enable multi-scale detection without image pyramids
 
 ### Q: "How many anchors do we really need?"
+
 **A:** For 224×224 image with stride=16:
+
 - Feature map: 14×14 = 196 locations
 - Anchors per location: 9
 - **Total: 1,764 anchors**
 - After NMS: Keep top ~2000 proposals
 
 ### Q: "Is RPN trained separately or jointly?"
+
 **A:** In practice, 4-step alternating training:
+
 1. Train RPN
 2. Train Fast R-CNN with RPN proposals
 3. Fine-tune RPN (freeze shared layers)
@@ -268,7 +294,9 @@ model = FasterRCNN(num_classes=20)
 But modern implementations use **approximate joint training** (easier, works well)
 
 ### Q: "Why not just use YOLO instead?"
+
 **A:** Trade-offs:
+
 - **Faster R-CNN**: More accurate (two-stage refinement)
 - **YOLO**: Faster inference (one-stage)
 - **Faster R-CNN**: Better for small objects (anchors at multiple scales)
@@ -328,14 +356,17 @@ But modern implementations use **approximate joint training** (easier, works wel
 ## 📦 Files Included
 
 ### Demo Scripts:
+
 - `anchor_generation_demo.py` - Standalone anchor visualization
 - `rpn_faster_rcnn.py` - Complete RPN and Faster R-CNN
 
 ### Generated Visualizations:
+
 - `base_anchors.pdf` - Base anchor templates
 - `anchors_on_image.pdf` - Anchors tiled on image
 
 ### Slides (Beamer):
+
 - Evolution comparison (R-CNN → Fast → Faster)
 - Anchor generation with code
 - RPN architecture with code
@@ -359,6 +390,7 @@ But modern implementations use **approximate joint training** (easier, works wel
 ## 🎯 Learning Outcomes
 
 By the end of the demo, students should:
+
 1. ✅ Understand what anchors are and why they're used
 2. ✅ Explain how RPN generates proposals
 3. ✅ Know the difference between R-CNN, Fast R-CNN, and Faster R-CNN
@@ -370,6 +402,7 @@ By the end of the demo, students should:
 ## 🚀 Next Steps
 
 After Faster R-CNN, students are ready for:
+
 1. **Feature Pyramid Networks (FPN)** - Multi-scale features
 2. **Focal Loss (RetinaNet)** - Class imbalance solution
 3. **Anchor-free detectors (FCOS)** - Beyond anchors

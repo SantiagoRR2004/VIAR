@@ -9,6 +9,7 @@ This package contains two educational demos illustrating classical (pre-deep lea
 **Purpose**: Demonstrates the complete SfM pipeline from 2D feature correspondences to sparse 3D reconstruction.
 
 **Pipeline Steps**:
+
 1. **Feature Detection & Matching**: Establishes 2D correspondences between views
 2. **Fundamental Matrix Estimation**: Uses RANSAC + 8-point algorithm to estimate epipolar geometry
 3. **Essential Matrix & Pose Recovery**: Extracts relative camera pose (R, t)
@@ -16,13 +17,15 @@ This package contains two educational demos illustrating classical (pre-deep lea
 5. **Bundle Adjustment**: Jointly optimizes camera poses and 3D points
 
 **Key Concepts Illustrated**:
+
 - Epipolar geometry: x₂ᵀ F x₁ = 0
 - RANSAC for robust estimation
 - Direct Linear Transform (DLT) for triangulation
 - Non-linear optimization (Levenberg-Marquardt)
 - Scale ambiguity in monocular reconstruction
 
-**Output**: 
+**Output**:
+
 - Visualization showing feature matches, inliers/outliers
 - 3D sparse point cloud reconstruction
 - Ground truth vs reconstructed comparison
@@ -35,6 +38,7 @@ This package contains two educational demos illustrating classical (pre-deep lea
 **Purpose**: Demonstrates dense reconstruction from sparse SfM using photometric consistency.
 
 **Pipeline Steps**:
+
 1. **Scene Generation**: Creates textured 3D surface with depth variation
 2. **Sparse SfM Simulation**: Generates sparse point cloud (simulating SfM output)
 3. **Cost Volume Construction**: Builds 3D cost volume using NCC matching
@@ -42,6 +46,7 @@ This package contains two educational demos illustrating classical (pre-deep lea
 5. **Depth Fusion**: Merges multiple depth maps into dense point cloud
 
 **Key Concepts Illustrated**:
+
 - Normalized Cross-Correlation (NCC) for photometric consistency
 - Cost volume aggregation across multiple views
 - Depth hypothesis sampling
@@ -49,6 +54,7 @@ This package contains two educational demos illustrating classical (pre-deep lea
 - Dense reconstruction (10-100x more points than SfM)
 
 **Output**:
+
 - Rendered images from multiple viewpoints
 - Per-view depth maps (color-coded)
 - Confidence maps showing matching quality
@@ -66,12 +72,14 @@ pip install numpy matplotlib opencv-python scipy
 ```
 
 **Required packages**:
+
 - `numpy` - Numerical computations
 - `matplotlib` - Visualization and 3D plotting
 - `opencv-python` (cv2) - Rodrigues conversion, image operations
 - `scipy` - Optimization (least_squares), interpolation
 
 ### Python Version
+
 - Python 3.7+
 
 ---
@@ -85,6 +93,7 @@ python demo_sfm_classical.py
 ```
 
 **Expected output**:
+
 ```
 ======================================================================
 CLASSICAL STRUCTURE FROM MOTION (SfM) DEMO
@@ -105,17 +114,17 @@ CLASSICAL STRUCTURE FROM MOTION (SfM) DEMO
 
 [Step 4] Estimating Fundamental Matrix with RANSAC...
   - Found 52 / 58 inliers
-  
+
 [Step 5] Recovering camera pose from Essential Matrix...
-  
+
 [Step 6] Triangulating 3D points...
   - Reconstructed 52 3D points
   - Mean reconstruction error: 0.0234
-  
+
 [Step 7] Running Bundle Adjustment...
   - Mean error after BA: 0.0156
   - Improvement: 0.0078
-  
+
 [Step 8] Visualizing results...
 ```
 
@@ -130,6 +139,7 @@ python demo_mvs_classical.py
 ```
 
 **Expected output**:
+
 ```
 ======================================================================
 CLASSICAL MULTI-VIEW STEREO (MVS) DEMO
@@ -153,10 +163,10 @@ CLASSICAL MULTI-VIEW STEREO (MVS) DEMO
   Camera 1 as reference...
     Computing depth map (240 x 320) with 32 depth samples...
     Mean depth error: 0.1234
-    
+
 [Step 6] Fusing depth maps into dense point cloud...
   - Total dense points: 12456
-  
+
 Reconstruction Statistics:
   - Sparse SfM points: 960
   - Dense MVS points: 12456
@@ -181,6 +191,7 @@ The output figure contains 6 subplots:
 6. **Bottom-Right**: Overlay comparison (GT vs reconstructed)
 
 **What to observe**:
+
 - RANSAC successfully identifies inliers (typically 80-95% of matches)
 - Triangulated 3D points approximate ground truth
 - Bundle adjustment reduces reprojection errors
@@ -194,19 +205,23 @@ The output figure contains 4 rows:
 
 **Row 1**: Input images from 3 cameras (grayscale textured)
 **Row 2**: Depth maps (color-coded, jet colormap)
-  - Red = close to camera
-  - Blue = far from camera
-  
+
+- Red = close to camera
+- Blue = far from camera
+
 **Row 3**: Confidence maps (NCC scores)
-  - Yellow/Green = high confidence (good texture match)
-  - Purple/Blue = low confidence (ambiguous or textureless)
-  
+
+- Yellow/Green = high confidence (good texture match)
+- Purple/Blue = low confidence (ambiguous or textureless)
+
 **Row 4**: 3D reconstructions
-  - Left: Sparse SfM (~1000 points)
-  - Center: Dense MVS (~10,000-15,000 points)
-  - Right: Overlay comparison
+
+- Left: Sparse SfM (~1000 points)
+- Center: Dense MVS (~10,000-15,000 points)
+- Right: Overlay comparison
 
 **What to observe**:
+
 - Depth maps capture surface geometry with depth variations
 - Confidence is high in textured regions, low in uniform areas
 - Dense reconstruction fills in most visible surface points
@@ -247,12 +262,14 @@ After running these demos, students should understand:
 ### Experiment Ideas
 
 **SfM Demo**:
+
 1. **Add more noise**: Increase `noise_std` in `add_noise_to_points()`
 2. **Add outliers**: Manually corrupt some correspondences
 3. **Change camera baseline**: Modify translation `t2` (larger baseline = better depth accuracy)
 4. **Vary number of points**: Change `n_points` in `generate_synthetic_scene()`
 
 **MVS Demo**:
+
 1. **Change depth sampling**: Modify `depth_samples` (trade-off: accuracy vs speed)
 2. **Adjust patch size**: Change `patch_size` (larger = more robust, but smooths details)
 3. **Test different textures**: Modify `create_synthetic_texture()` to add/remove patterns
@@ -261,6 +278,7 @@ After running these demos, students should understand:
 ### Key Parameters to Tune
 
 **SfM**:
+
 ```python
 # RANSAC parameters
 threshold=3.0          # Inlier threshold (pixels)
@@ -274,6 +292,7 @@ t2 = np.array([1.5, 0, 0])  # Larger = better depth, but more occlusions
 ```
 
 **MVS**:
+
 ```python
 # Depth range
 depth_min=3.0, depth_max=7.0    # Scene depth bounds
@@ -293,12 +312,14 @@ confidence_threshold=0.3         # Minimum NCC to accept point
 These demos also illustrate common failure modes:
 
 ### SfM Failures:
+
 - **Textureless surfaces**: No features to match (walls, sky)
 - **Repetitive patterns**: Ambiguous correspondences
 - **Dynamic scenes**: Moving objects violate static assumption
 - **Specular surfaces**: Violate Lambertian reflectance
 
 ### MVS Failures:
+
 - **Uniform regions**: NCC is ambiguous without texture
 - **Thin structures**: Missed by discrete depth sampling
 - **Occlusions**: Foreground/background confusion
@@ -315,16 +336,19 @@ These demos correspond to **Section 1: Classical 3D Reconstruction (Era I: 1990-
 ### Slide References:
 
 **SfM Demo** covers:
+
 - "Structure from Motion: Epipolar Geometry and Optimization"
 - "Structure from Motion: End-to-End Pipeline"
 - Algorithms: 8-point algorithm, RANSAC, bundle adjustment
 
 **MVS Demo** covers:
+
 - "Classical 3D: Multi-View Stereo (MVS)"
 - "Multi-View Stereo: Depth Maps, Fusion, and Failure Modes"
 - "Multi-View Stereo: From Sparse SfM to Dense Geometry"
 
 ### Recommended Reading:
+
 - Hartley & Zisserman: "Multiple View Geometry in Computer Vision"
 - Szeliski: "Computer Vision: Algorithms and Applications" (Chapter 11)
 - COLMAP: Schönberger & Frahm, "Structure-from-Motion Revisited" (CVPR 2016)
@@ -336,28 +360,36 @@ These demos correspond to **Section 1: Classical 3D Reconstruction (Era I: 1990-
 ### Common Issues:
 
 **1. Import errors**:
+
 ```
 ModuleNotFoundError: No module named 'cv2'
 ```
+
 **Solution**: Install OpenCV: `pip install opencv-python`
 
 **2. Slow execution (MVS demo)**:
+
 ```
 Computing depth map takes > 5 minutes
 ```
-**Solution**: 
+
+**Solution**:
+
 - Reduce `depth_samples` (e.g., 16 instead of 32)
 - Increase `step` in depth map computation (line 239)
 
 **3. Poor reconstruction quality**:
+
 - Check that `noise_std` is not too high
 - Ensure sufficient texture in synthetic scene
 - Verify camera baseline is appropriate for depth range
 
 **4. Visualization issues**:
+
 ```
 UserWarning: Matplotlib is currently using agg...
 ```
+
 **Solution**: This is normal for headless systems. Plots are still saved to disk.
 
 ---
@@ -369,6 +401,7 @@ UserWarning: Matplotlib is currently using agg...
 **Course**: VIAR - Visión Artificial
 
 **References**:
+
 1. Hartley & Zisserman (2003) - Multi-view geometry fundamentals
 2. Schönberger et al. (2016) - COLMAP SfM system
 3. Furukawa & Ponce (2010) - Patch-based MVS
@@ -385,6 +418,7 @@ After understanding these classical methods, explore:
 3. **Era IV (2020+)**: Gaussian splatting, diffusion-based 3D generation
 
 These classical foundations are still relevant:
+
 - COLMAP remains the gold standard for SfM benchmarking
 - MVS principles inspire modern cost volume designs (e.g., in MVSNet)
 - Bundle adjustment is used to refine neural 3D representations
@@ -395,22 +429,20 @@ These classical foundations are still relevant:
 
 Educational use only. Code provided for VIAR course students.
 
-
-
 # Quick Start Guide: Classical 3D Reconstruction Demos
 
 ## 📦 Package Contents
 
 You have received 6 files for classical 3D reconstruction demonstrations:
 
-| File | Purpose | Runtime |
-|------|---------|---------|
-| `test_installation.py` | Verify dependencies | 5 sec |
-| `demo_sfm_classical.py` | Structure from Motion demo | 10 sec |
-| `demo_mvs_classical.py` | Multi-View Stereo demo | 60 sec |
-| `demo_complete_pipeline.py` | SfM → MVS pipeline | 10 sec |
-| `README_classical_demos.md` | Detailed documentation | - |
-| `README_QUICKSTART.md` | This file | - |
+| File                        | Purpose                    | Runtime |
+| --------------------------- | -------------------------- | ------- |
+| `test_installation.py`      | Verify dependencies        | 5 sec   |
+| `demo_sfm_classical.py`     | Structure from Motion demo | 10 sec  |
+| `demo_mvs_classical.py`     | Multi-View Stereo demo     | 60 sec  |
+| `demo_complete_pipeline.py` | SfM → MVS pipeline         | 10 sec  |
+| `README_classical_demos.md` | Detailed documentation     | -       |
+| `README_QUICKSTART.md`      | This file                  | -       |
 
 ---
 
@@ -429,6 +461,7 @@ python test_installation.py
 ```
 
 Expected output:
+
 ```
 ✓ numpy           v1.24.3      - Numerical computation
 ✓ matplotlib      v3.7.1       - Visualization
@@ -457,6 +490,7 @@ python demo_complete_pipeline.py    # SfM → MVS pipeline
 **What it does**: Reconstructs sparse 3D structure from 2D image correspondences
 
 **Key techniques**:
+
 - ✓ Feature matching
 - ✓ Fundamental matrix (RANSAC)
 - ✓ Camera pose recovery
@@ -464,6 +498,7 @@ python demo_complete_pipeline.py    # SfM → MVS pipeline
 - ✓ Bundle adjustment
 
 **Output**: `sfm_demo_results.png`
+
 - Feature correspondences (inliers vs outliers)
 - Sparse 3D point cloud
 - Ground truth comparison
@@ -478,6 +513,7 @@ python demo_complete_pipeline.py    # SfM → MVS pipeline
 **What it does**: Creates dense 3D reconstruction using photometric consistency
 
 **Key techniques**:
+
 - ✓ Cost volume construction
 - ✓ Normalized Cross-Correlation (NCC)
 - ✓ Depth map estimation
@@ -485,6 +521,7 @@ python demo_complete_pipeline.py    # SfM → MVS pipeline
 - ✓ Confidence filtering
 
 **Output**: `mvs_demo_results.png`
+
 - Input images from multiple cameras
 - Per-view depth maps (color-coded)
 - Confidence maps (NCC scores)
@@ -499,6 +536,7 @@ python demo_complete_pipeline.py    # SfM → MVS pipeline
 **What it does**: Shows the full SfM → MVS workflow
 
 **Highlights**:
+
 - ✓ Camera array setup
 - ✓ Sparse reconstruction (SfM)
 - ✓ Dense reconstruction (MVS)
@@ -506,6 +544,7 @@ python demo_complete_pipeline.py    # SfM → MVS pipeline
 - ✓ Multiple viewing angles
 
 **Output**: `complete_pipeline_comparison.png`
+
 - Multi-panel comprehensive visualization
 - Point density comparison
 - Pipeline diagram
@@ -546,11 +585,13 @@ python demo_complete_pipeline.py    # SfM → MVS pipeline
 ### Issue 1: Import Error
 
 **Problem**:
+
 ```
 ModuleNotFoundError: No module named 'cv2'
 ```
 
 **Solution**:
+
 ```bash
 pip install opencv-python
 ```
@@ -562,6 +603,7 @@ pip install opencv-python
 **Problem**: MVS demo takes > 5 minutes
 
 **Solution**: Edit `demo_mvs_classical.py`, line 239:
+
 ```python
 # Change this:
 depth_samples=32
@@ -577,6 +619,7 @@ depth_samples=16
 **Problem**: Plots don't show up
 
 **Solution**: This is normal on headless systems. Check for saved PNG files:
+
 - `sfm_demo_results.png`
 - `mvs_demo_results.png`
 - `complete_pipeline_comparison.png`
@@ -588,11 +631,13 @@ depth_samples=16
 ### SfM Output Interpretation
 
 **Look for**:
+
 - **High inlier ratio** (>80%): Good feature matching
 - **Low reconstruction error** (<0.05): Accurate triangulation
 - **Improvement after BA**: Bundle adjustment is working
 
 **Red flags**:
+
 - Low inlier ratio (<50%): Poor feature matching
 - High error (>0.5): Camera calibration issues
 
@@ -601,11 +646,13 @@ depth_samples=16
 ### MVS Output Interpretation
 
 **Look for**:
+
 - **Smooth depth maps**: Good photometric consistency
 - **High confidence** (green regions): Textured areas
 - **Dense coverage**: 10-20× more points than SfM
 
 **Red flags**:
+
 - Noisy depth maps: Insufficient texture
 - Low confidence (purple): Uniform or specular regions
 - Holes in reconstruction: Occlusions or thin structures
@@ -619,6 +666,7 @@ depth_samples=16
 After running these demos, you should understand:
 
 **Technical Concepts**:
+
 1. ✓ Epipolar geometry and fundamental matrix
 2. ✓ Camera pose estimation from correspondences
 3. ✓ 3D triangulation from multiple views
@@ -627,6 +675,7 @@ After running these demos, you should understand:
 6. ✓ Depth map fusion strategies
 
 **Practical Insights**:
+
 1. ✓ When classical methods work well (textured, static scenes)
 2. ✓ When they fail (reflections, repetitive patterns)
 3. ✓ Trade-offs: speed vs accuracy vs density
@@ -713,12 +762,12 @@ After running these demos, you should understand:
 
 ### Common Error Messages:
 
-| Error | Cause | Solution |
-|-------|-------|----------|
-| `ModuleNotFoundError` | Missing package | `pip install <package>` |
-| `MemoryError` | Insufficient RAM | Reduce point counts |
-| `UserWarning: Matplotlib...` | Headless system | Check PNG files |
-| Optimization not converging | Bad initialization | Check random seed |
+| Error                        | Cause              | Solution                |
+| ---------------------------- | ------------------ | ----------------------- |
+| `ModuleNotFoundError`        | Missing package    | `pip install <package>` |
+| `MemoryError`                | Insufficient RAM   | Reduce point counts     |
+| `UserWarning: Matplotlib...` | Headless system    | Check PNG files         |
+| Optimization not converging  | Bad initialization | Check random seed       |
 
 ---
 
@@ -730,7 +779,7 @@ After running these demos, you should understand:
 ✓ Comprehensive documentation  
 ✓ Test suite for verification  
 ✓ Real implementation of classical algorithms  
-✓ Educational visualizations  
+✓ Educational visualizations
 
 ### What You'll Learn:
 
@@ -738,7 +787,7 @@ After running these demos, you should understand:
 ✓ How MVS creates dense reconstructions  
 ✓ When classical methods work/fail  
 ✓ Foundation for modern deep learning methods  
-✓ Practical 3D reconstruction pipeline  
+✓ Practical 3D reconstruction pipeline
 
 ### Next Steps:
 
@@ -754,9 +803,10 @@ After running these demos, you should understand:
 
 **Course**: VIAR - Visión Artificial (Artificial Vision)  
 **Institution**: Universidad de Vigo, Computer Science Department  
-**Level**: Advanced undergraduate / Graduate  
+**Level**: Advanced undergraduate / Graduate
 
 **Related Topics**:
+
 - Era I (1990-2014): Classical methods (these demos)
 - Era II (2015-2018): Deep stereo (DispNet, PSM-Net)
 - Era III (2018-2020): Neural representations (NeRF)
@@ -780,5 +830,5 @@ You've successfully completed the demos if you can:
 
 ---
 
-*For detailed technical documentation, see `README_classical_demos.md`*  
-*For troubleshooting, run `test_installation.py`*
+_For detailed technical documentation, see `README_classical_demos.md`_  
+_For troubleshooting, run `test_installation.py`_

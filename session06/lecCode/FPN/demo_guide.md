@@ -3,6 +3,7 @@
 ## 📚 Learning Objectives
 
 By the end of this session, students will understand:
+
 1. **FPN**: How to combine high resolution + strong semantics
 2. **Multi-scale detection** without image pyramids
 3. **Class imbalance** problem in one-stage detectors
@@ -18,6 +19,7 @@ By the end of this session, students will understand:
 #### 1.1 Motivation (3 min)
 
 **The Fundamental Trade-off:**
+
 ```
 Deep layers (C5):  Strong semantics, Low resolution (7×7)
                    ↓
@@ -38,6 +40,7 @@ python fpn_demo.py
 ```
 
 **What students will see:**
+
 ```
 📊 FPN Forward Pass:
   Input C3: [1,512,28,28] (high-res, weak semantics)
@@ -61,17 +64,19 @@ python fpn_demo.py
 ```
 
 **Key Teaching Points:**
+
 - "P3 now has **both** high resolution AND strong semantics"
 - "Top-down pathway brings semantic information from C5 to C3"
 - "Lateral connections preserve spatial details"
 - "All levels have 256 channels (unified!)"
 
 **Draw on Board:**
+
 ```
 C5 (7×7, 2048ch)  →  [1×1]  →  lat5 (256ch)  →  P5
     ↓ upsample                                   ↓
 C4 (14×14, 1024ch) → [1×1] → lat4 (256ch) → + → P4
-    ↓ upsample                                   ↓  
+    ↓ upsample                                   ↓
 C3 (28×28, 512ch) →  [1×1] → lat3 (256ch) → + → P3
 
 P3: 28×28 resolution + strong semantics (from P5!)
@@ -80,16 +85,19 @@ P3: 28×28 resolution + strong semantics (from P5!)
 #### 1.3 Why FPN Works (5 min)
 
 **Show visualization:**
+
 ```python
 visualize_fpn_architecture()  # Generates fpn_architecture.pdf
 ```
 
 **Explain each level:**
+
 - **P3 (stride 8, 28×28)**: Detects small objects (8-64 pixels)
 - **P4 (stride 16, 14×14)**: Detects medium objects (64-128 pixels)
 - **P5 (stride 32, 7×7)**: Detects large objects (128+ pixels)
 
 **Performance Impact:**
+
 ```
 Without FPN (C5 only):  AP_small = 10%
 With FPN (P3-P5):       AP_small = 18% (+8%!)
@@ -102,6 +110,7 @@ With FPN (P3-P5):       AP_small = 18% (+8%!)
 #### 2.1 The Class Imbalance Problem (5 min)
 
 **Set up the problem:**
+
 ```python
 # In object detection:
 num_anchor_locations = 100000
@@ -112,11 +121,13 @@ print(f"Positive ratio: {ratio:.1%}")  # 0.1%!
 ```
 
 **The Issue:**
+
 - 99,900 easy negatives (confident background)
 - 100 hard positives (uncertain objects)
 - Cross-entropy: Easy examples dominate!
 
 **Demonstrate:**
+
 ```python
 from retinanet_demo import demo_focal_loss_effect
 
@@ -124,6 +135,7 @@ demo_focal_loss_effect()
 ```
 
 **Output:**
+
 ```
 Cross-Entropy:
   Easy negatives total loss: 836
@@ -141,6 +153,7 @@ Focal Loss (γ=2, α=0.25):
 #### 2.2 Focal Loss Solution (5 min)
 
 **Show the formula:**
+
 ```
 FL(p_t) = -α_t (1-p_t)^γ log(p_t)
           ↑     ↑        ↑
@@ -148,6 +161,7 @@ FL(p_t) = -α_t (1-p_t)^γ log(p_t)
 ```
 
 **Key Components:**
+
 1. **$(1-p_t)^\gamma$** - Modulating factor
    - Easy (p→1): $(1-0.9)^2 = 0.01$ (99% reduction!)
    - Hard (p→0): $(1-0.1)^2 = 0.81$ (19% reduction)
@@ -156,11 +170,13 @@ FL(p_t) = -α_t (1-p_t)^γ log(p_t)
    - Typically α=0.25 for positive, 0.75 for negative
 
 **Visualize:**
+
 ```python
 visualize_focal_loss()  # Generates focal_loss_visualization.pdf
 ```
 
 **Three panels show:**
+
 1. Loss curves (CE vs FL with different γ)
 2. Modulating factor effect
 3. Loss contribution (easy vs hard)
@@ -171,6 +187,7 @@ visualize_focal_loss()  # Generates focal_loss_visualization.pdf
 #### 2.3 RetinaNet Architecture (5 min)
 
 **Components:**
+
 ```
 RetinaNet = FPN + Dense Anchors + Focal Loss
 
@@ -182,6 +199,7 @@ RetinaNet = FPN + Dense Anchors + Focal Loss
 ```
 
 **Show forward pass:**
+
 ```python
 model = RetinaNet(num_classes=80)
 image = torch.randn(1, 3, 512, 512)
@@ -193,6 +211,7 @@ for i, (cls, box) in enumerate(zip(cls_logits, box_preds)):
 ```
 
 **Performance:**
+
 ```
 COCO AP: 39.1% (beats Faster R-CNN's 36.2%!)
 Speed: 5 FPS
@@ -204,6 +223,7 @@ Breakthrough: First one-stage to match two-stage!
 ## 📊 Visualizations to Show
 
 ### 1. FPN Architecture (`fpn_architecture.pdf`)
+
 - Bottom-up pathway (backbone)
 - Lateral connections (1×1 conv)
 - Top-down pathway (upsample + add)
@@ -214,6 +234,7 @@ Breakthrough: First one-stage to match two-stage!
 "The top-down pathway is like an information highway bringing semantics from deep to shallow layers"
 
 ### 2. Focal Loss Curves (`focal_loss_visualization.pdf`)
+
 - Panel 1: FL vs CE with different γ values
 - Panel 2: Modulating factor effect
 - Panel 3: Loss contribution comparison
@@ -311,26 +332,34 @@ print("Hard examples dominate training!")
 ## 🎓 Student Questions & Answers
 
 ### Q: "Why not just use weighted cross-entropy?"
+
 **A:** Weighted CE addresses class imbalance but not easy/hard imbalance. Focal loss addresses both:
+
 - α handles class imbalance (pos/neg ratio)
 - γ handles easy/hard imbalance (focusing)
 
 ### Q: "What's the best value for γ?"
+
 **A:** Paper shows γ=2 works best:
+
 - γ=0: Standard CE (no focusing)
 - γ=0.5: Mild focusing
 - γ=2: Strong focusing (optimal)
 - γ=5: Too aggressive
 
 ### Q: "Why does FPN use 256 channels everywhere?"
+
 **A:** Unification benefits:
+
 - Share detection heads across levels
 - Same anchor sizes work at all levels
 - Simpler architecture
 - 256 is enough for semantics, not too heavy
 
 ### Q: "Can we use FPN with Faster R-CNN?"
+
 **A:** Yes! FPN was originally used with Faster R-CNN:
+
 - Faster R-CNN + FPN: Excellent accuracy
 - RetinaNet: Adds focal loss for one-stage
 
@@ -363,6 +392,7 @@ print("Hard examples dominate training!")
 ## 🚀 Demo Execution Plan
 
 ### Setup (before class):
+
 ```bash
 # Test all demos
 python fpn_demo.py
@@ -379,18 +409,20 @@ ls *.pdf
 
 **Minute 0-3**: Recap (Faster R-CNN limitations)
 **Minute 3-15**: FPN demo (multi-scale fusion)
-  - Run `fpn_demo.py`
-  - Show architecture diagram
-  - Explain top-down pathway
-  
+
+- Run `fpn_demo.py`
+- Show architecture diagram
+- Explain top-down pathway
+
 **Minute 15-18**: Transition (class imbalance problem)
-  
+
 **Minute 18-33**: RetinaNet + Focal Loss
-  - Demonstrate class imbalance
-  - Show focal loss effect
-  - Run `retinanet_demo.py`
-  - Show visualization
-  
+
+- Demonstrate class imbalance
+- Show focal loss effect
+- Run `retinanet_demo.py`
+- Show visualization
+
 **Minute 33-40**: Q&A and wrap-up
 
 ---
@@ -398,16 +430,18 @@ ls *.pdf
 ## 📈 Performance Summary
 
 ### FPN Impact:
-| Metric | Without FPN | With FPN | Gain |
-|--------|-------------|----------|------|
-| AP | 31.2% | 36.2% | +5.0% |
-| AP_small | 10.0% | 18.0% | +8.0% |
-| AP_large | 48.0% | 49.0% | +1.0% |
+
+| Metric   | Without FPN | With FPN | Gain  |
+| -------- | ----------- | -------- | ----- |
+| AP       | 31.2%       | 36.2%    | +5.0% |
+| AP_small | 10.0%       | 18.0%    | +8.0% |
+| AP_large | 48.0%       | 49.0%    | +1.0% |
 
 ### RetinaNet vs Faster R-CNN:
-| Method | AP | FPS | Type |
-|--------|----|----|------|
-| Faster R-CNN | 36.2% | 5 | Two-stage |
+
+| Method        | AP        | FPS   | Type          |
+| ------------- | --------- | ----- | ------------- |
+| Faster R-CNN  | 36.2%     | 5     | Two-stage     |
 | **RetinaNet** | **39.1%** | **5** | **One-stage** |
 
 **Breakthrough**: RetinaNet is the first one-stage detector to match (and beat) two-stage accuracy!
@@ -441,6 +475,7 @@ ls *.pdf
 ## 🎯 Learning Outcomes
 
 Students should be able to:
+
 1. ✅ Explain FPN's top-down pathway
 2. ✅ Understand multi-scale detection strategy
 3. ✅ Recognize class imbalance in object detection

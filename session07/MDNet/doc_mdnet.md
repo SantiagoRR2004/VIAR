@@ -1,6 +1,7 @@
 # MDNet: Multi-Domain Convolutional Neural Network Tracker
 
 ## Paper Information
+
 **Title:** Learning Multi-Domain Convolutional Neural Networks for Visual Tracking  
 **Authors:** Hyeonseob Nam, Bohyung Han  
 **Conference:** CVPR 2016  
@@ -9,6 +10,7 @@
 ## Overview
 
 MDNet is one of the **first successful deep learning trackers**, achieving state-of-the-art performance through:
+
 1. **Multi-domain learning**: Pre-training on multiple tracking sequences
 2. **Online adaptation**: Fine-tuning during tracking
 3. **Binary classification**: Distinguishing target from background
@@ -56,26 +58,29 @@ Shared Classification Layer:
 
 ### Parameter Count
 
-| Component | Parameters | Description |
-|-----------|-----------|-------------|
-| Conv1-3 (shared) | ~6M | Feature extraction |
-| FC4-5 (per domain) | ~2.6M | Domain-specific adaptation |
-| FC6 (shared) | ~1K | Binary classification |
-| **Total (K domains)** | **6M + 2.6M×K** | Scales with domains |
+| Component             | Parameters      | Description                |
+| --------------------- | --------------- | -------------------------- |
+| Conv1-3 (shared)      | ~6M             | Feature extraction         |
+| FC4-5 (per domain)    | ~2.6M           | Domain-specific adaptation |
+| FC6 (shared)          | ~1K             | Binary classification      |
+| **Total (K domains)** | **6M + 2.6M×K** | Scales with domains        |
 
 ### Why This Architecture?
 
 **Shared Convolutional Layers:**
+
 - Extract generic visual features
 - Learn edges, textures, patterns
 - Invariant across different sequences
 
 **Domain-Specific FC Layers:**
+
 - Adapt to sequence-specific appearance
 - Handle different object categories
 - Capture sequence-level variations
 
 **Shared Classification Layer:**
+
 - Universal target vs background decision
 - Trained on all domains jointly
 
@@ -120,18 +125,21 @@ where:
 ### Positive and Negative Sampling
 
 **Positive Samples:**
+
 - IoU > 0.7 with ground truth
 - ~50 samples per frame
 - Small translation (±10% of target size)
 - Small scale variation (±5%)
 
 **Negative Samples:**
+
 - IoU < 0.5 with ground truth
 - ~200 samples per frame
 - Large translation (50-200% of target size)
 - Various scales
 
 **Hard Negative Mining:**
+
 ```python
 # During training
 negative_scores = model(negative_samples)
@@ -158,14 +166,14 @@ Tracking (Frame t > 1):
   1. Sample N=256 candidate patches around previous location
      - Translation: ±60% of target size
      - Scale: ±5% of target size
-  
+
   2. Forward pass all candidates through network
      scores = softmax(model(candidates))[:, 1]  # Target class
-  
+
   3. Select best candidate:
      best_idx = argmax(scores)
      current_bbox = candidates[best_idx].bbox
-  
+
   4. Online update (every 10 frames):
      if frame_idx % 10 == 0 and score > 0.5:
        - Sample new positives around current_bbox
@@ -177,6 +185,7 @@ Tracking (Frame t > 1):
 ### Why Online Adaptation?
 
 **Problem:** Target appearance changes over time
+
 - Illumination changes
 - Pose variations
 - Partial occlusions
@@ -185,6 +194,7 @@ Tracking (Frame t > 1):
 **Solution:** Adapt model to current appearance
 
 **Trade-off:**
+
 - ✓ Handles appearance changes
 - ✗ Risk of drift (adapting to wrong target)
 - ✗ Slower (needs training time)
@@ -192,6 +202,7 @@ Tracking (Frame t > 1):
 ### Preventing Drift
 
 **Strategies:**
+
 1. **Conservative updates**: Update only when confident (score > 0.5)
 2. **Infrequent updates**: Every 10 frames, not every frame
 3. **Limited adaptation**: Update only FC6, keep Conv1-5 fixed
@@ -203,6 +214,7 @@ Tracking (Frame t > 1):
 ### Pre-training Phase
 
 **Datasets:**
+
 - VOT2014 training set
 - VOT2015 training set
 - OTB-100 sequences
@@ -220,6 +232,7 @@ Tracking (Frame t > 1):
 | Dropout | 0.5 |
 
 **Data Augmentation:**
+
 - Random Gaussian noise
 - Color jittering
 - Random translation (during sampling)
@@ -249,11 +262,13 @@ Tracking (Frame t > 1):
 ### Benchmark Results
 
 **OTB-100:**
+
 - Success rate: **67.8%**
 - Precision: **90.9%**
 - Rank: **#1** (2016)
 
 **VOT2015:**
+
 - Accuracy: **0.60**
 - Robustness: **1.16** (failures per sequence)
 - **Winner** of VOT2015 challenge
@@ -267,13 +282,13 @@ Tracking (Frame t > 1):
 
 ### Speed Analysis
 
-| Component | Time (ms) | Notes |
-|-----------|-----------|-------|
-| Candidate sampling | 50 | Generate 256 patches |
-| Feature extraction | 600 | Conv1-3 for all |
-| Classification | 50 | FC4-6 |
-| Online update | 300 | Every 10 frames |
-| **Total per frame** | **~1000** | **~1 FPS** |
+| Component           | Time (ms) | Notes                |
+| ------------------- | --------- | -------------------- |
+| Candidate sampling  | 50        | Generate 256 patches |
+| Feature extraction  | 600       | Conv1-3 for all      |
+| Classification      | 50        | FC4-6                |
+| Online update       | 300       | Every 10 frames      |
+| **Total per frame** | **~1000** | **~1 FPS**           |
 
 **Bottleneck:** Processing 256 candidates through network
 
@@ -281,31 +296,31 @@ Tracking (Frame t > 1):
 
 ### Impact of Multi-Domain Learning
 
-| Configuration | OTB Success | VOT EAO |
-|--------------|-------------|---------|
-| Single domain | 62.3% | 0.223 |
-| 10 domains | 65.1% | 0.241 |
-| **50 domains** | **67.8%** | **0.257** |
+| Configuration  | OTB Success | VOT EAO   |
+| -------------- | ----------- | --------- |
+| Single domain  | 62.3%       | 0.223     |
+| 10 domains     | 65.1%       | 0.241     |
+| **50 domains** | **67.8%**   | **0.257** |
 
 More domains → Better generalization!
 
 ### Impact of Online Adaptation
 
-| Configuration | OTB Success |
-|--------------|-------------|
-| No online update | 61.2% |
-| Update every frame | 64.5% |
-| **Update every 10 frames** | **67.8%** |
+| Configuration              | OTB Success |
+| -------------------------- | ----------- |
+| No online update           | 61.2%       |
+| Update every frame         | 64.5%       |
+| **Update every 10 frames** | **67.8%**   |
 
 Balanced update frequency optimal.
 
 ### Impact of Network Depth
 
-| Architecture | OTB Success | Speed |
-|-------------|-------------|-------|
-| 3 conv + 1 FC | 58.3% | 3 FPS |
-| **3 conv + 3 FC** | **67.8%** | 1 FPS |
-| 5 conv + 3 FC | 68.1% | 0.5 FPS |
+| Architecture      | OTB Success | Speed   |
+| ----------------- | ----------- | ------- |
+| 3 conv + 1 FC     | 58.3%       | 3 FPS   |
+| **3 conv + 3 FC** | **67.8%**   | 1 FPS   |
+| 5 conv + 3 FC     | 68.1%       | 0.5 FPS |
 
 Diminishing returns with more layers.
 
@@ -338,23 +353,23 @@ def sample_candidates(prev_bbox, image_size, n_samples=256):
     """Sample candidate patches around previous location"""
     x, y, w, h = prev_bbox
     candidates = []
-    
+
     for i in range(n_samples):
         # Sample translation
         dx = np.random.uniform(-0.6*w, 0.6*w)
         dy = np.random.uniform(-0.6*h, 0.6*h)
-        
+
         # Sample scale
         scale = np.random.uniform(0.95, 1.05)
-        
+
         # New bbox
         new_x = x + dx
         new_y = y + dy
         new_w = w * scale
         new_h = h * scale
-        
+
         candidates.append([new_x, new_y, new_w, new_h])
-    
+
     return candidates
 ```
 
@@ -364,20 +379,20 @@ def sample_candidates(prev_bbox, image_size, n_samples=256):
 def extract_patch(image, bbox, output_size=107):
     """Extract and resize patch from image"""
     x, y, w, h = bbox
-    
+
     # Add context (padding)
     pad = 0.3  # 30% padding
     x1 = max(0, int(x - pad*w))
     y1 = max(0, int(y - pad*h))
     x2 = min(image.shape[1], int(x + w + pad*w))
     y2 = min(image.shape[0], int(y + h + pad*h))
-    
+
     # Crop
     patch = image[y1:y2, x1:x2]
-    
+
     # Resize to 107×107
     patch = cv2.resize(patch, (output_size, output_size))
-    
+
     return patch
 ```
 
@@ -388,12 +403,12 @@ def hard_negative_mining(negatives, scores, threshold=0.3):
     """Select hard negatives for training"""
     # Hard negatives: high score but actually negative
     hard_negatives = negatives[scores > threshold]
-    
+
     # If too many, sample randomly
     if len(hard_negatives) > 50:
         indices = np.random.choice(len(hard_negatives), 50, replace=False)
         hard_negatives = hard_negatives[indices]
-    
+
     return hard_negatives
 ```
 
@@ -421,20 +436,20 @@ while True:
     ret, frame = cap.read()
     if not ret:
         break
-    
+
     frame_idx += 1
-    
+
     # Track
     bbox, score = tracker.update(frame)
-    
+
     # Visualize
     x, y, w, h = [int(v) for v in bbox]
     cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
     cv2.putText(frame, f'Score: {score:.2f}', (x, y-10),
                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-    
+
     cv2.imshow('MDNet', frame)
-    
+
     if cv2.waitKey(30) == ord('q'):
         break
 ```
@@ -444,6 +459,7 @@ while True:
 ### RT-MDNet (Real-Time MDNet)
 
 **Key Changes:**
+
 - Lightweight backbone (MobileNet)
 - Fewer candidates (64 vs 256)
 - Faster inference (~25 FPS)
@@ -452,6 +468,7 @@ while True:
 ### MDNet with Correlation Filters
 
 **Hybrid Approach:**
+
 - MDNet for feature extraction
 - Correlation filter for localization
 - Faster tracking (~10 FPS)
@@ -459,6 +476,7 @@ while True:
 ### MDNet++
 
 **Improvements:**
+
 - Better sampling strategy
 - Improved online update
 - Multi-scale search
@@ -469,6 +487,7 @@ while True:
 ### Before MDNet (2015)
 
 **Dominant paradigm:** Correlation filters
+
 - Fast (100+ FPS)
 - Limited by hand-crafted features
 - Accuracy plateau
@@ -476,6 +495,7 @@ while True:
 ### MDNet's Impact (2016)
 
 **Paradigm shift:** Deep learning for tracking
+
 - First deep tracker to win major challenge
 - Showed CNNs work for tracking
 - Inspired numerous follow-ups
@@ -483,6 +503,7 @@ while True:
 ### After MDNet (2016-2020)
 
 **New direction:** Siamese networks
+
 - SiamFC (2016): Faster but less accurate
 - SiamRPN (2018): Fast AND accurate
 - Eventually superseded MDNet's accuracy/speed trade-off

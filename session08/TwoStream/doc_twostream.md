@@ -12,12 +12,14 @@ Two-Stream Networks pioneered the approach of using separate pathways for spatia
 ### 1. Dual Stream Architecture
 
 The network consists of two independent CNNs:
+
 - **Spatial Stream**: Processes single RGB frames to recognize objects and scenes
 - **Temporal Stream**: Processes stacked optical flow fields to capture motion patterns
 
 ### 2. Optical Flow
 
 Optical flow represents the motion between consecutive frames:
+
 - Computed using methods like TV-L1 or Farneback
 - Stacked across multiple frames (e.g., 10 frames = 20 channels for x and y flow)
 - Captures dense motion information across the entire frame
@@ -25,6 +27,7 @@ Optical flow represents the motion between consecutive frames:
 ### 3. Late Fusion
 
 The two streams are combined at the decision level:
+
 - Each stream produces class scores independently
 - Final prediction averages the softmax scores from both streams
 - Alternative: weighted fusion or other combination strategies
@@ -32,16 +35,19 @@ The two streams are combined at the decision level:
 ## Architecture Details
 
 ### Spatial Stream
+
 - **Input**: Single RGB frame (3 channels, 224×224)
 - **Backbone**: Modified VGG-16 architecture
 - **Pre-training**: ImageNet for better initialization
 
 ### Temporal Stream
+
 - **Input**: Stacked optical flow (20 channels, 224×224)
 - **Backbone**: VGG-16 style architecture
 - **Training**: From scratch on action recognition data
 
 ### Network Structure
+
 Input RGB [3, 224, 224] → VGG-16 → FC layers → Spatial Scores [num_classes]
 Input Flow [20, 224, 224] → VGG-16 → FC layers → Temporal Scores [num_classes]
 Final Prediction = Average(Spatial Scores, Temporal Scores)
@@ -86,11 +92,13 @@ Final Prediction = Average(Spatial Scores, Temporal Scores)
 ## Impact
 
 Two-Stream Networks established the foundation for many subsequent video understanding methods:
+
 - Inspired temporal segment networks (TSN)
 - Led to research on better fusion strategies
 - Motivated end-to-end learnable motion features (e.g., 3D CNNs)
 
 ## Usage
+
 ```python
 from twostream_demo import TwoStreamNetwork
 

@@ -7,6 +7,7 @@ This guide shows how to demonstrate Fast R-CNN in your lecture, comparing it wit
 ## 🎯 Learning Objectives
 
 Students will understand:
+
 1. **Shared CNN features** - Why processing all proposals together is faster
 2. **RoI Pooling** - How to extract fixed-size features from variable regions
 3. **Multi-task loss** - Joint training for classification and regression
@@ -24,6 +25,7 @@ demo_fast_rcnn()
 ```
 
 **Expected Output:**
+
 ```
 ======================================================================
 Fast R-CNN Demo: Shared CNN Features for Efficient Detection
@@ -57,6 +59,7 @@ Fast R-CNN Demo: Shared CNN Features for Efficient Detection
 ```
 
 **Teaching Points:**
+
 - Show how **single CNN pass** replaces 2000 passes
 - Explain **RoI pooling** converts variable sizes to fixed
 - Demonstrate **multi-task loss** trains both tasks together
@@ -83,6 +86,7 @@ for epoch in range(10):
 ```
 
 **Training Time:**
+
 - 20 images, 10 epochs: ~3-5 minutes on GPU
 - Shows real performance on actual dataset
 
@@ -102,8 +106,9 @@ visualize_smooth_l1_loss()         # Loss function comparison
 ```
 
 **Generated Files:**
+
 - `roi_pooling_visualization.pdf` - Include in RoI pooling slide
-- `architecture_comparison.pdf` - Include in architecture comparison slide  
+- `architecture_comparison.pdf` - Include in architecture comparison slide
 - `smooth_l1_visualization.pdf` - Include in loss function slide
 
 ---
@@ -154,16 +159,20 @@ print(f"{'='*60}")
 ## 🎓 Lecture Flow Suggestion
 
 ### 1. **Motivation (2 min)**
+
 - "R-CNN is slow: 2000 CNN passes per image"
 - "Can we share computation?"
 
 ### 2. **Key Innovation: Shared Features (3 min)**
+
 - Show architecture comparison visualization
 - Explain: 1 CNN pass → extract features → RoI pooling
 
 ### 3. **RoI Pooling Demo (3 min)**
+
 - Show RoI pooling visualization
 - Run code snippet showing variable→fixed size
+
 ```python
 # Demo RoI pooling
 roi_pool = RoIPooling(output_size=(7, 7))
@@ -174,15 +183,18 @@ print(f"Input: variable size → Output: {pooled.shape}")  # [1, 2048, 7, 7]
 ```
 
 ### 4. **Multi-Task Loss (2 min)**
+
 - Show smooth L1 visualization
 - Explain classification + bbox regression jointly
 
 ### 5. **Live Demo (5 min)**
+
 - Run synthetic data demo
 - Show training progress
 - Point out: "Look, only 1 CNN pass per image!"
 
 ### 6. **Results Comparison (2 min)**
+
 - Show timing comparison
 - Explain: same accuracy, 10× faster
 
@@ -191,39 +203,45 @@ print(f"Input: variable size → Output: {pooled.shape}")  # [1, 2048, 7, 7]
 ## 📈 Performance Metrics
 
 ### Synthetic Data (5 images, 3 classes)
-| Method | Training Time | CNN Passes | Speed-up |
-|--------|--------------|------------|----------|
-| R-CNN | ~120s | 10,000 | 1× |
-| Fast R-CNN | ~12s | 5 | **10×** |
+
+| Method     | Training Time | CNN Passes | Speed-up |
+| ---------- | ------------- | ---------- | -------- |
+| R-CNN      | ~120s         | 10,000     | 1×       |
+| Fast R-CNN | ~12s          | 5          | **10×**  |
 
 ### PASCAL VOC 2007 (100 images, 20 classes)
-| Method | mAP | Time/Image | Training Time |
-|--------|-----|------------|---------------|
-| R-CNN | 66.0% | 47s | ~4-6 hours |
-| Fast R-CNN | 66.9% | 0.3s | ~20-30 min |
+
+| Method     | mAP   | Time/Image | Training Time |
+| ---------- | ----- | ---------- | ------------- |
+| R-CNN      | 66.0% | 47s        | ~4-6 hours    |
+| Fast R-CNN | 66.9% | 0.3s       | ~20-30 min    |
 
 ---
 
 ## 🔑 Key Teaching Points
 
 ### 1. **Computational Efficiency**
+
 - **R-CNN:** `N_images × N_proposals` CNN passes
 - **Fast R-CNN:** `N_images` CNN passes
 - **Savings:** ~2000× fewer forward passes!
 
 ### 2. **RoI Pooling Magic**
+
 ```
 Variable size regions → Fixed size features
    (any H×W)         →     (7×7×2048)
 ```
 
 ### 3. **Multi-Task Learning**
+
 ```
 Loss = L_cls + λ × L_bbox
      = Cross-entropy + Smooth L1
 ```
 
 ### 4. **Smooth L1 Benefits**
+
 - Not sensitive to outliers (unlike L2)
 - Stable gradients (unlike L1)
 - Best of both worlds!
@@ -233,19 +251,25 @@ Loss = L_cls + λ × L_bbox
 ## 🐛 Troubleshooting
 
 ### Issue: "CUDA out of memory"
+
 **Solution:** Reduce batch size or use CPU
+
 ```python
 trainer = FastRCNNTrainer(model, num_classes=20, device='cpu')
 ```
 
 ### Issue: "Too slow on CPU"
+
 **Solution:** Use fewer images
+
 ```python
 images, annotations = create_synthetic_dataset(num_images=3)
 ```
 
 ### Issue: "Selective Search not available"
+
 **Solution:** Code already uses SimplifiedProposalGenerator as fallback
+
 ```python
 proposal_gen = SimplifiedProposalGenerator(num_proposals=300)
 ```

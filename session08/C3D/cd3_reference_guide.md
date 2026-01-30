@@ -13,6 +13,7 @@ wget -O c3d_sports1m.pickle \
 ## 🎬 Demo Usage
 
 ### Sports-1M Mode (487 classes - Meaningful predictions)
+
 ```bash
 python c3d_demo_pretrained.py \
   --video your_video.mp4 \
@@ -25,6 +26,7 @@ python c3d_demo_pretrained.py \
 **Expected**: Correct predictions (e.g., "golf" 65%, "tennis" 8%)
 
 ### UCF-101 Mode Before Fine-Tuning (101 classes - Random predictions)
+
 ```bash
 python c3d_demo_pretrained.py \
   --video your_video.mp4 \
@@ -37,6 +39,7 @@ python c3d_demo_pretrained.py \
 **Expected**: Random predictions (~1% each) - THIS IS NORMAL! Fine-tune to fix.
 
 ### UCF-101 Mode After Fine-Tuning (101 classes - Good predictions)
+
 ```bash
 python c3d_demo_pretrained.py \
   --video your_video.mp4 \
@@ -53,6 +56,7 @@ python c3d_demo_pretrained.py \
 ## 🎓 Fine-Tuning on UCF-101
 
 ### Quick Start (fc policy - 6-8 hours)
+
 ```bash
 python finetune_c3d_ucf101_from_sports1m.py \
   --ucf_root /path/to/UCF-101 \
@@ -69,6 +73,7 @@ python finetune_c3d_ucf101_from_sports1m.py \
 **Result**: 75-80% accuracy, fast training
 
 ### Recommended (conv5 policy - 10-12 hours)
+
 ```bash
 python finetune_c3d_ucf101_from_sports1m.py \
   --ucf_root /path/to/UCF-101 \
@@ -86,6 +91,7 @@ python finetune_c3d_ucf101_from_sports1m.py \
 **Result**: 80-85% accuracy, good trade-off
 
 ### Maximum Accuracy (none policy - 15-20 hours)
+
 ```bash
 python finetune_c3d_ucf101_from_sports1m.py \
   --ucf_root /path/to/UCF-101 \
@@ -106,31 +112,35 @@ python finetune_c3d_ucf101_from_sports1m.py \
 
 ## 🎯 Freeze Policy Comparison
 
-| Policy | Trainable Layers | Params | Time | Accuracy | GPU RAM | Best For |
-|--------|------------------|--------|------|----------|---------|----------|
-| **fc** | fc6, fc7, fc8 | 45M (58%) | 6-8h | 75-80% | 6 GB | Quick experiments |
-| **conv5** ⭐ | fc6-8 + conv5a/b | 60M (77%) | 10-12h | 80-85% | 8 GB | **Production** |
-| **none** | All layers | 78M (100%) | 15-20h | 82-85% | 10 GB | Max accuracy |
+| Policy       | Trainable Layers | Params     | Time   | Accuracy | GPU RAM | Best For          |
+| ------------ | ---------------- | ---------- | ------ | -------- | ------- | ----------------- |
+| **fc**       | fc6, fc7, fc8    | 45M (58%)  | 6-8h   | 75-80%   | 6 GB    | Quick experiments |
+| **conv5** ⭐ | fc6-8 + conv5a/b | 60M (77%)  | 10-12h | 80-85%   | 8 GB    | **Production**    |
+| **none**     | All layers       | 78M (100%) | 15-20h | 82-85%   | 10 GB   | Max accuracy      |
 
 ---
 
 ## 🔧 Important Parameters
 
 ### Multi-Clip Sampling
+
 - `--segments 3` (training): Sample 3 random clips per video
 - `--segments 5` (validation): Sample 5 uniform clips per video
 - Higher K = better accuracy (+3-5%) but slower
 
 ### Batch Size
+
 - `--batch_size 8`: Standard (requires 8-10 GB GPU)
 - `--batch_size 6`: If memory limited
 - `--batch_size 12`: If you have large GPU (24+ GB)
 
 ### Mixed Precision
+
 - `--amp`: Enable for 2× memory reduction and 1.5-2× speedup
 - Recommended for all training!
 
 ### Learning Rate
+
 - `--lr 1e-3`: Default (good for fc, conv5 policies)
 - `--lr 5e-4`: Lower for none policy (training all layers)
 - `--lr 5e-3`: Higher if convergence too slow
@@ -140,42 +150,54 @@ python finetune_c3d_ucf101_from_sports1m.py \
 ## 🐛 Common Issues & Solutions
 
 ### Issue: "Missing keys: ['fc8.weight', 'fc8.bias']"
+
 **Status**: ✅ **EXPECTED** - This is normal!
 **Why**: Sports-1M has 487 classes, UCF-101 has 101 classes. fc8 is re-initialized.
 **Action**: Proceed normally. The pretrained features (conv1-5, fc6-7) are loaded correctly.
 
 ### Issue: "RuntimeError: size mismatch for fc6.weight"
+
 **Problem**: Wrong architecture variant
 **Solution**: The code auto-detects! But if you forced wrong arch:
+
 - Check `--force_arch sports1m` or `--force_arch ours`
 - Let auto-detection work (don't use --force_arch)
 
 ### Issue: Demo predictions are random/nonsense
+
 **Before fine-tuning**: ✅ **EXPECTED** - fc8 is randomly initialized
 **After fine-tuning**: ❌ Problem! Check:
+
 1. Did fine-tuning complete? (check checkpoint files)
 2. Are you loading the right checkpoint? (use best.pth not latest)
 3. Is --num_classes correct? (101 for UCF-101)
 
 ### Issue: CUDA out of memory
+
 **Solutions**:
+
 1. Reduce batch size: `--batch_size 4`
 2. Reduce segments: `--segments 2`
 3. Enable AMP: `--amp`
 4. Use smaller freeze policy: `--freeze fc` instead of `--freeze conv5`
 
 ### Issue: Training accuracy stuck at ~1%
+
 **Problem**: Layers might not be trainable
 **Check**:
+
 ```python
 for name, param in model.named_parameters():
     if param.requires_grad:
         print(f'{name}: trainable')
 ```
+
 Should see fc6, fc7, fc8 (and conv5a/b if using conv5 policy).
 
 ### Issue: Validation accuracy not improving
+
 **Potential causes**:
+
 1. Learning rate too high/low → Try `--lr 5e-4` or `--lr 5e-3`
 2. Overfitting → Add `--wd 5e-4` (weight decay)
 3. Not enough epochs → Try `--epochs 12`
@@ -186,12 +208,14 @@ Should see fc6, fc7, fc8 (and conv5a/b if using conv5 policy).
 ## 📊 Expected Results Timeline
 
 ### FC Policy (Quick)
+
 - **Epoch 1**: ~40-50% accuracy
 - **Epoch 4**: ~65-70% accuracy
 - **Epoch 8**: ~75-80% accuracy (plateau)
 - **Time**: 6-8 hours
 
 ### Conv5 Policy (Recommended)
+
 - **Epoch 1**: ~45-55% accuracy
 - **Epoch 4**: ~70-75% accuracy
 - **Epoch 8**: ~80-83% accuracy
@@ -199,6 +223,7 @@ Should see fc6, fc7, fc8 (and conv5a/b if using conv5 policy).
 - **Time**: 10-12 hours
 
 ### None Policy (Maximum)
+
 - **Epoch 1**: ~50-60% accuracy
 - **Epoch 5**: ~75-80% accuracy
 - **Epoch 10**: ~82-85% accuracy (plateau)
@@ -241,6 +266,7 @@ Should see fc6, fc7, fc8 (and conv5a/b if using conv5 policy).
 ## 📝 Typical Training Log
 
 ### Good Training (Converging)
+
 ```
 Epoch 1/8
 [Train] loss 2.543 | avg_acc 42.3% | eta 65.2 min
@@ -259,6 +285,7 @@ Best accuracy: 79.8%
 ```
 
 ### Problem: Not Converging
+
 ```
 Epoch 1/8
 [Train] loss 4.612 | avg_acc 1.2%    # ← BAD: Stuck at random
@@ -356,12 +383,3 @@ python c3d_demo_pretrained.py \
 ---
 
 **Remember**: Random predictions before fine-tuning are EXPECTED and NORMAL! The magic happens during fine-tuning. 🚀
-
-
-
-
-
-
-
-
-

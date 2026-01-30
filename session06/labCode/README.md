@@ -89,16 +89,19 @@ cd ../..
 ### 3. Train Model
 
 **Train YOLO:**
+
 ```bash
 python train.py --model yolo --batch-size 8 --epochs 20
 ```
 
 **Train FCOS:**
+
 ```bash
 python train.py --model fcos --batch-size 4 --epochs 20
 ```
 
 **Resume training:**
+
 ```bash
 python train.py --model fcos --resume checkpoints/fcos_4bs/checkpoint_epoch_10.pth
 ```
@@ -125,12 +128,14 @@ tensorboard --logdir logs
 ## 📊 Expected Results
 
 ### YOLO (ResNet18, 20 epochs)
+
 - **mAP**: 15-20%
 - **AP50**: 30-35%
 - **Training time**: ~2-4 hours (GPU)
 - **Inference**: 30-40 FPS
 
 ### FCOS (ResNet50, 20 epochs)
+
 - **mAP**: 25-30%
 - **AP50**: 42-48%
 - **AP75**: 20-25%
@@ -235,6 +240,7 @@ python train.py --model fcos --batch-size 2
 ### Loss is NaN
 
 Check:
+
 1. Learning rate too high → Try `--lr 1e-5`
 2. Gradient explosion → Gradient clipping is enabled by default
 3. Bad data → Visualize training samples
@@ -242,6 +248,7 @@ Check:
 ### Low mAP (<5%)
 
 Check:
+
 1. Model predictions: `python evaluate.py --visualize`
 2. Target encoding: Print targets in loss function
 3. NMS threshold: Try `--nms-threshold 0.7`
@@ -250,18 +257,21 @@ Check:
 ### Training Too Slow
 
 1. Reduce dataset size (edit `config.py`):
+
 ```python
 # In COCODetectionDataset
 self.img_ids = self.img_ids[:1000]  # Use only 1000 images
 ```
 
 2. Use smaller backbone:
+
 ```python
 # In config.py
 fcos_backbone = 'resnet18'  # Instead of resnet50
 ```
 
 3. Reduce input size:
+
 ```python
 input_size = 320  # Instead of 448
 ```
@@ -271,6 +281,7 @@ input_size = 320  # Instead of 448
 ### Speed up Training
 
 1. **Mixed Precision Training** (requires Apex or PyTorch >= 1.6):
+
 ```python
 from torch.cuda.amp import autocast, GradScaler
 
@@ -285,11 +296,13 @@ scaler.update()
 ```
 
 2. **Multi-GPU Training**:
+
 ```python
 model = nn.DataParallel(model)
 ```
 
 3. **Increase num_workers**:
+
 ```bash
 python train.py --num-workers 8
 ```
@@ -413,6 +426,7 @@ Educational use only. COCO dataset has its own license.
 ## 📞 Support
 
 For questions about this lab:
+
 - Check troubleshooting section
 - Review lecture materials
 - Ask during office hours
@@ -421,12 +435,7 @@ For questions about this lab:
 
 **Good luck with your object detection implementation! 🎯**
 
-
-
-
-
-
------------
+---
 
 🎯 Key Features Implemented
 Models

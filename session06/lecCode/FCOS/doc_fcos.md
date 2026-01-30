@@ -3,6 +3,7 @@
 ### **1. Python Implementation** (`fcos_complete.py`)
 
 **Key Components:**
+
 - ✅ **Backbone + FPN**: Multi-scale feature extraction
 - ✅ **FCOS Head**: Shared classification, regression, and centerness towers
 - ✅ **Loss Function**: Focal Loss + IoU Loss + Centerness Loss
@@ -11,6 +12,7 @@
 - ✅ **Visualization**: Predictions vs ground truth
 
 **FCOS Innovations Implemented:**
+
 1. **Anchor-free**: Per-pixel predictions, no anchor boxes
 2. **ltrb format**: Distances to box edges (left, top, right, bottom)
 3. **Centerness**: Quality score to suppress low-quality detections
@@ -20,6 +22,7 @@
 ### **2. Improved Slides** (LaTeX)
 
 **Slide Structure:**
+
 1. **Introduction** - Anchor-free revolution concept
 2. **Architecture** - Per-pixel predictions with FPN
 3. **Centerness Branch** - Innovation explained with math and visuals
@@ -61,6 +64,7 @@ Your course now has a perfect progression:
 ```
 
 **Students learn:**
+
 - Feature pyramids are fundamental (FPN)
 - Grid-based detection (YOLO)
 - Evolution to anchor-free (FCOS)
@@ -70,6 +74,7 @@ Your course now has a perfect progression:
 ## 📈 Expected Output
 
 When you run the FCOS script:
+
 1. **Training progress** showing all loss components
 2. **Training curves** (`fcos_training_curves.png`)
 3. **Predictions visualization** (`fcos_predictions.png`)

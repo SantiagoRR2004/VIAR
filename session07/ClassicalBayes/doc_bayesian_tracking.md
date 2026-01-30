@@ -9,6 +9,7 @@ This directory contains OpenCV implementations of classical Bayesian state estim
 **Linear-Gaussian Bayesian filtering** for state estimation.
 
 **Key Features:**
+
 - Constant velocity motion model
 - Optimal for linear-Gaussian systems
 - Prediction during missing measurements
@@ -19,6 +20,7 @@ This directory contains OpenCV implementations of classical Bayesian state estim
 The Kalman filter recursively estimates state `x_t = [x, y, vx, vy]` from noisy measurements `z_t = [x_meas, y_meas]`.
 
 **State Equations:**
+
 ```
 Predict:  x̂(t|t-1) = A·x̂(t-1|t-1)
           P(t|t-1) = A·P(t-1|t-1)·A' + Q
@@ -29,6 +31,7 @@ Update:   K(t) = P(t|t-1)·H' / (H·P(t|t-1)·H' + R)
 ```
 
 **Usage:**
+
 ```bash
 # Manual mode: click to provide measurements
 python kalman_demo.py --manual
@@ -44,6 +47,7 @@ python kalman_demo.py --video input.mp4 --output output.mp4
 ```
 
 **Visualization:**
+
 - **Blue circle**: Predicted position
 - **Green circle**: Measured position
 - **Red filled circle**: Corrected (filtered) position
@@ -51,12 +55,14 @@ python kalman_demo.py --video input.mp4 --output output.mp4
 - **Magenta arrow**: Velocity vector
 
 **Strengths:**
+
 - Optimal for linear systems
 - Closed-form solution (fast)
 - Handles missing measurements via prediction
 - Provides uncertainty quantification
 
 **Limitations:**
+
 - Assumes linear dynamics
 - Assumes Gaussian noise
 - Single-modal posterior only
@@ -68,6 +74,7 @@ python kalman_demo.py --video input.mp4 --output output.mp4
 **Sequential Monte Carlo** for nonlinear/non-Gaussian tracking.
 
 **Key Features:**
+
 - Color histogram-based observation model
 - No linearity/Gaussianity assumptions
 - Handles multimodal distributions
@@ -76,11 +83,13 @@ python kalman_demo.py --video input.mp4 --output output.mp4
 
 **Theory:**
 Represents posterior `p(x_t | z_{1:t})` as weighted particles:
+
 ```
 p(x_t | z_{1:t}) ≈ Σ w_t^(i) δ(x_t - x_t^(i))
 ```
 
 **Algorithm:**
+
 ```
 For each time step:
   1. Predict: Sample x_t^(i) ~ p(x_t | x_{t-1}^(i))
@@ -92,12 +101,14 @@ For each time step:
 
 **Observation Model:**
 Color histogram similarity (Bhattacharyya coefficient):
+
 ```
 ρ(h1, h2) = Σ sqrt(h1(b) · h2(b))
 likelihood = exp(-λ · (1 - ρ))
 ```
 
 **Usage:**
+
 ```bash
 # Interactive ROI selection
 python particle_demo.py --video input.mp4
@@ -113,17 +124,20 @@ python particle_demo.py --video input.mp4 --output output.mp4
 ```
 
 **Visualization:**
+
 - **Green dots**: Particles (colored by weight)
 - **Green rectangle**: Estimated bounding box
 - **Red circle**: Estimated center
 
 **Strengths:**
+
 - Handles nonlinear dynamics
 - Non-Gaussian noise
 - Multimodal posteriors (e.g., occlusion ambiguity)
 - No Jacobians needed (unlike EKF)
 
 **Limitations:**
+
 - Computationally expensive (many particles needed)
 - Particle degeneracy if not resampled properly
 - Requires good motion model
@@ -132,14 +146,14 @@ python particle_demo.py --video input.mp4 --output output.mp4
 
 ## Comparison: Kalman vs Particle Filter
 
-| Aspect | Kalman Filter | Particle Filter |
-|--------|---------------|-----------------|
-| **Computational Cost** | O(d³) | O(N·d) |
-| **Optimality** | Optimal (linear-Gaussian) | Approximate |
-| **Nonlinearity** | Poor (linearization) | Excellent |
-| **Multimodal** | No | Yes |
-| **Real-time** | Yes (~500 FPS) | Yes (~30-100 FPS) |
-| **Tuning** | Q, R matrices | N, motion noise |
+| Aspect                 | Kalman Filter             | Particle Filter   |
+| ---------------------- | ------------------------- | ----------------- |
+| **Computational Cost** | O(d³)                     | O(N·d)            |
+| **Optimality**         | Optimal (linear-Gaussian) | Approximate       |
+| **Nonlinearity**       | Poor (linearization)      | Excellent         |
+| **Multimodal**         | No                        | Yes               |
+| **Real-time**          | Yes (~500 FPS)            | Yes (~30-100 FPS) |
+| **Tuning**             | Q, R matrices             | N, motion noise   |
 
 where d = state dim, N = number of particles
 
@@ -148,6 +162,7 @@ where d = state dim, N = number of particles
 ## Extended Kalman Filter (EKF)
 
 For nonlinear systems, the **Extended Kalman Filter** linearizes via Jacobians:
+
 ```python
 # Nonlinear motion model
 x_t = f(x_{t-1}, u_t) + w_t
@@ -159,11 +174,13 @@ F_t = ∂f/∂x |_{x̂(t-1|t-1)}
 ```
 
 **When to use:**
+
 - Moderate nonlinearity (e.g., bearing-only tracking)
 - Gaussian noise assumption holds
 - Need real-time performance
 
 **Alternatives:**
+
 - **Unscented Kalman Filter (UKF)**: Deterministic sampling, better for highly nonlinear
 - **Ensemble Kalman Filter**: Use particles but with Kalman-like updates
 
@@ -174,18 +191,21 @@ F_t = ∂f/∂x |_{x̂(t-1|t-1)}
 These classical methods laid the foundation for modern approaches:
 
 ### Motion Models → Neural Networks
+
 ```
 Kalman:        x_t = A·x_{t-1} + w_t
 Deep Learning: x_t = f_θ(x_{t-1}, I_t) + w_t
 ```
 
 ### Particle Filters → Attention Mechanisms
+
 ```
 Particles:     Discrete weighted hypotheses
 Transformers:  Continuous attention weights over spatial locations
 ```
 
 ### State Estimation → Embedding Learning
+
 ```
 Bayesian:      p(x_t | z_{1:t}) via recursive update
 Deep:          φ(I_t) ≈ φ(I_{t-1}) via learned similarity
@@ -196,12 +216,14 @@ Deep:          φ(I_t) ≈ φ(I_{t-1}) via learned similarity
 ## Implementation Notes
 
 ### Kalman Filter Tips:
+
 1. **Initialize P_0 large** if uncertain about initial state
 2. **Tune Q**: Higher = trust motion less, track measurements more closely
 3. **Tune R**: Higher = trust measurements less, rely more on prediction
 4. **Constant Velocity** works for smooth motion; use Constant Acceleration for aggressive maneuvers
 
 ### Particle Filter Tips:
+
 1. **Number of particles**: 100-500 for 2D tracking; 1000+ for high-dimensional
 2. **Resample threshold**: ESS < N/2 is typical
 3. **Add noise after resampling** to maintain particle diversity

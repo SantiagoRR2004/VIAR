@@ -1,6 +1,7 @@
 # Fine-Tuning and Freezing Strategy: Quick Reference
 
 ## Overview
+
 This guide explains the layer freezing strategy used in `finetune_twostream_ucf101.py` for adapting ImageNet pre-trained Two-Stream networks to UCF-101 action recognition.
 
 ## Core Concept: Freeze-Then-Unfreeze
@@ -16,6 +17,7 @@ for p in model.temporal.backbone.classifier.parameters():
 ```
 
 **Why this pattern?**
+
 - Prevents accidentally training frozen layers
 - Makes it explicit what's trainable
 - Easy to add more unfreezing logic
@@ -23,16 +25,19 @@ for p in model.temporal.backbone.classifier.parameters():
 ## The Three Training Modes
 
 ### Mode 1: Temporal-Only (Default) ⚡ FASTEST
+
 ```bash
 python finetune_twostream_ucf101.py --ucf_root /data/UCF-101 --epochs 10
 ```
 
 **What's trained:**
+
 - ✅ Temporal classifier (fc6, fc7, fc8)
 - ❌ Temporal conv layers (frozen)
 - ❌ Spatial stream (entirely frozen)
 
 **Performance:**
+
 - Accuracy: 80-85%
 - Training time: 6-8 hours
 - Parameters trained: ~20M / 138M total
@@ -42,18 +47,21 @@ python finetune_twostream_ucf101.py --ucf_root /data/UCF-101 --epochs 10
 ---
 
 ### Mode 2: Temporal + First Conv 🎯 RECOMMENDED
+
 ```bash
 python finetune_twostream_ucf101.py --ucf_root /data/UCF-101 \
     --epochs 15 --unfreeze_temporal_backbone
 ```
 
 **What's trained:**
+
 - ✅ Temporal classifier
 - ✅ Temporal first conv (adapts to optical flow input)
 - ❌ Temporal conv2-5 (frozen)
 - ❌ Spatial stream (frozen)
 
 **Performance:**
+
 - Accuracy: 83-88%
 - Training time: 8-10 hours
 - Parameters trained: ~25M / 138M total
@@ -64,18 +72,21 @@ python finetune_twostream_ucf101.py --ucf_root /data/UCF-101 \
 ---
 
 ### Mode 3: Both Streams 🏆 BEST ACCURACY
+
 ```bash
 python finetune_twostream_ucf101.py --ucf_root /data/UCF-101 \
     --epochs 20 --spatial --unfreeze_spatial --fuse
 ```
 
 **What's trained:**
+
 - ✅ Temporal classifier + first conv
 - ✅ Spatial classifier
 - ✅ Optimizes fused logits
 - ❌ Both conv backbones mostly frozen
 
 **Performance:**
+
 - Accuracy: 85-90% (matches original paper's 88%)
 - Training time: 12-15 hours
 - Parameters trained: ~40M / 138M total
@@ -88,17 +99,20 @@ python finetune_twostream_ucf101.py --ucf_root /data/UCF-101 \
 ## Why Temporal-Only Is Default
 
 ### 1. **Input Distribution Mismatch**
+
 - Spatial stream: RGB frames (same as ImageNet) ✅
 - Temporal stream: Optical flow (different from ImageNet) ⚠️
 - → Temporal needs more adaptation
 
 ### 2. **Task Relevance**
+
 - Motion is THE discriminative feature for actions
 - Temporal alone gets 81.2% (original paper)
 - Spatial alone gets 73.0%
 - → Focus on temporal gives best ROI
 
 ### 3. **Efficiency**
+
 - Training temporal only: 6-8 hours
 - Training both: 12-15 hours
 - → 2x faster with only -3-5% accuracy
@@ -106,6 +120,7 @@ python finetune_twostream_ucf101.py --ucf_root /data/UCF-101 \
 ## Layer-by-Layer Breakdown
 
 ### VGG16 Architecture
+
 ```
 Input (RGB or Flow)
     ↓
@@ -123,15 +138,16 @@ fc8 (101)             ← Action classes
 
 ### What to Freeze/Train
 
-| Layer | Learns | Spatial Stream | Temporal Stream |
-|-------|--------|---------------|-----------------|
-| conv1-2 | Edges, textures | 🔵 Freeze | 🟠 Optional (--unfreeze_temporal_backbone) |
-| conv3-4 | Patterns, shapes | 🔵 Freeze | 🔵 Freeze |
-| conv5 | Semantics | 🔵 Freeze | 🔵 Freeze |
-| fc6-7 | Task features | 🟠 Optional (--unfreeze_spatial) | 🔴 Always train |
-| fc8 | Classifier | 🟠 Optional | 🔴 Always train |
+| Layer   | Learns           | Spatial Stream                   | Temporal Stream                            |
+| ------- | ---------------- | -------------------------------- | ------------------------------------------ |
+| conv1-2 | Edges, textures  | 🔵 Freeze                        | 🟠 Optional (--unfreeze_temporal_backbone) |
+| conv3-4 | Patterns, shapes | 🔵 Freeze                        | 🔵 Freeze                                  |
+| conv5   | Semantics        | 🔵 Freeze                        | 🔵 Freeze                                  |
+| fc6-7   | Task features    | 🟠 Optional (--unfreeze_spatial) | 🔴 Always train                            |
+| fc8     | Classifier       | 🟠 Optional                      | 🔴 Always train                            |
 
 Legend:
+
 - 🔴 Always train (requires_grad=True)
 - 🟠 Optional (flag-controlled)
 - 🔵 Freeze (requires_grad=False)
@@ -139,6 +155,7 @@ Legend:
 ## Code Walkthrough
 
 ### The Freezing Logic (lines 445-456)
+
 ```python
 # 1. Start with everything frozen
 for p in model.parameters():
@@ -164,6 +181,7 @@ if args.unfreeze_spatial:
 ### Why Check `n.startswith("0")`?
 
 VGG16's `features` module naming:
+
 ```
 features.0  = Conv2d (first conv) ← We want to unfreeze this
 features.1  = ReLU
@@ -178,10 +196,12 @@ So `n.startswith("0")` matches: `0.weight`, `0.bias` (first conv parameters)
 ## General Fine-Tuning Principles
 
 ### 1. Layer Hierarchy
+
 - **Early layers**: General features (edges, textures) → Usually freeze
 - **Late layers**: Task-specific (semantics, classifier) → Always train
 
 ### 2. Dataset Size
+
 - **Large dataset** (>100k samples): Can train everything
 - **Medium dataset** (10k-100k): Train top layers
 - **Small dataset** (<10k): Freeze everything except classifier
@@ -189,16 +209,19 @@ So `n.startswith("0")` matches: `0.weight`, `0.bias` (first conv parameters)
 **UCF-101** = 13k videos → Medium dataset → Train classifier + maybe high layers
 
 ### 3. Domain Similarity
+
 - **Similar domains** (ImageNet → CoCo): Can train more layers
 - **Different domains** (ImageNet → Medical): Freeze more layers
 - **ImageNet → Actions**: Moderate difference → Freeze low, train high
 
 ### 4. Learning Rate Strategy
+
 - **New layers** (classifier): High LR (1e-3 to 1e-2)
 - **Pre-trained layers**: Low LR (1e-4 to 1e-5)
 - **Frozen layers**: No LR (not in optimizer)
 
 ### 5. Gradual Unfreezing (Advanced)
+
 ```
 Stage 1 (Epochs 1-5):   Train classifier only
 Stage 2 (Epochs 6-10):  Unfreeze conv5 + classifier
@@ -210,10 +233,12 @@ Stage 3 (Epochs 11-20): Unfreeze conv4-5 + classifier
 ## Common Mistakes ❌
 
 ### 1. Training Everything with High LR
+
 ```python
 # BAD: Will destroy pre-trained features
 optimizer = SGD(model.parameters(), lr=1e-2)
 ```
+
 ```python
 # GOOD: Different LRs for different parts
 optimizer = SGD([
@@ -223,11 +248,13 @@ optimizer = SGD([
 ```
 
 ### 2. Forgetting to Freeze
+
 ```python
 # BAD: No freezing, trains everything
 model = TwoStreamNet()
 optimizer = SGD(model.parameters(), lr=1e-3)
 ```
+
 ```python
 # GOOD: Explicit freezing
 for p in model.parameters():
@@ -238,26 +265,29 @@ optimizer = SGD(filter(lambda p: p.requires_grad, model.parameters()), lr=1e-3)
 ```
 
 ### 3. Freezing Too Much
+
 ```python
 # BAD: Only trains final layer (1000 params)
 for p in model.parameters():
     p.requires_grad = False
 model.temporal.backbone.classifier[-1].weight.requires_grad = True
 ```
+
 Result: Underfits, can't learn complex patterns
 
 ## Expected Results on UCF-101
 
-| Configuration | Top-1 Accuracy | Training Time | When to Use |
-|--------------|---------------|---------------|-------------|
-| Temporal classifier only | 80-83% | 6-8 hrs | Fast baseline |
-| + First conv | 83-88% | 8-10 hrs | **Recommended** |
-| + Spatial stream | 85-90% | 12-15 hrs | Maximum accuracy |
-| Original paper (2014) | 88.0% | N/A | Benchmark |
+| Configuration            | Top-1 Accuracy | Training Time | When to Use      |
+| ------------------------ | -------------- | ------------- | ---------------- |
+| Temporal classifier only | 80-83%         | 6-8 hrs       | Fast baseline    |
+| + First conv             | 83-88%         | 8-10 hrs      | **Recommended**  |
+| + Spatial stream         | 85-90%         | 12-15 hrs     | Maximum accuracy |
+| Original paper (2014)    | 88.0%          | N/A           | Benchmark        |
 
 ## Debugging Tips
 
 ### Check What's Trainable
+
 ```python
 trainable = sum(p.numel() for p in model.parameters() if p.requires_grad)
 total = sum(p.numel() for p in model.parameters())
@@ -265,11 +295,13 @@ print(f"Trainable: {trainable:,} / {total:,} ({100*trainable/total:.1f}%)")
 ```
 
 Expected outputs:
+
 - Temporal classifier only: ~20M / 138M (14%)
-- + First conv: ~25M / 138M (18%)
-- + Spatial: ~40M / 138M (29%)
+- - First conv: ~25M / 138M (18%)
+- - Spatial: ~40M / 138M (29%)
 
 ### Verify Gradients
+
 ```python
 # After loss.backward(), check that frozen layers have no gradients
 for n, p in model.named_parameters():
@@ -278,6 +310,7 @@ for n, p in model.named_parameters():
 ```
 
 ### Monitor Per-Layer Gradient Norms
+
 ```python
 for n, p in model.named_parameters():
     if p.grad is not None:
@@ -289,11 +322,11 @@ If frozen layers have gradients → Bug in freezing logic!
 
 ## Summary Table
 
-| Strategy | Frozen | Trainable | Accuracy | Time |
-|----------|--------|-----------|----------|------|
-| **Temporal-only** | Spatial + Temporal conv | Temporal fc | 80-83% | 6-8h |
-| **+ First conv** | Spatial + Temporal conv2-5 | Temporal conv1 + fc | 83-88% | 8-10h |
-| **+ Spatial** | Temporal/Spatial conv2-5 | Both conv1 + both fc | 85-90% | 12-15h |
+| Strategy          | Frozen                     | Trainable            | Accuracy | Time   |
+| ----------------- | -------------------------- | -------------------- | -------- | ------ |
+| **Temporal-only** | Spatial + Temporal conv    | Temporal fc          | 80-83%   | 6-8h   |
+| **+ First conv**  | Spatial + Temporal conv2-5 | Temporal conv1 + fc  | 83-88%   | 8-10h  |
+| **+ Spatial**     | Temporal/Spatial conv2-5   | Both conv1 + both fc | 85-90%   | 12-15h |
 
 **Recommendation:** Start with temporal-only, add `--unfreeze_temporal_backbone` if you have time.
 

@@ -15,8 +15,8 @@ Unlike 2D convolutions that operate on spatial dimensions only, 3D convolutions 
 2D Conv: kernel [k×k] operates on [H×W]
 3D Conv: kernel [t×k×k] operates on [T×H×W]
 
-
 This allows the network to:
+
 - Capture motion patterns across frames
 - Learn temporal features hierarchically
 - Process spatiotemporal volume directly
@@ -24,6 +24,7 @@ This allows the network to:
 ### 2. Architecture Design
 
 C3D extends VGG-style architecture to 3D:
+
 - All convolutions use 3×3×3 kernels
 - Temporal pooling varies by layer
 - 16-frame clips as input (found optimal through experiments)
@@ -31,6 +32,7 @@ C3D extends VGG-style architecture to 3D:
 ### 3. Feature Learning
 
 C3D learns hierarchical spatiotemporal features:
+
 - **Early layers**: Low-level motion (edges, texture motion)
 - **Middle layers**: Object parts and their motion
 - **Late layers**: High-level action semantics
@@ -38,6 +40,7 @@ C3D learns hierarchical spatiotemporal features:
 ## Architecture Details
 
 ### Network Structure
+
 Input: [B, 3, 16, 112, 112]
 ↓
 Conv1 (64 filters, 3×3×3) → Pool1 [1×2×2]
@@ -51,7 +54,6 @@ Conv4a,b (512 filters, 3×3×3) → Pool4 [2×2×2]
 Conv5a,b (512 filters, 3×3×3) → Pool5 [2×2×2]
 ↓
 FC6 (4096) → FC7 (4096) → FC8 (num_classes)
-
 
 ### Design Choices
 
@@ -95,11 +97,13 @@ FC6 (4096) → FC7 (4096) → FC8 (num_classes)
 ## Training Strategy
 
 ### Pre-training
+
 - Sports-1M dataset (1.1M videos, 487 classes)
 - Helps learn general motion patterns
 - Transfer to target datasets
 
 ### Fine-tuning
+
 1. Sample 16-frame clips randomly during training
 2. Apply data augmentation:
    - Random cropping (128×128 → 112×112)
@@ -108,6 +112,7 @@ FC6 (4096) → FC7 (4096) → FC8 (num_classes)
 4. Learning rate: 1e-3, reduced by 10× at epochs 4, 6, 12
 
 ### Inference
+
 - Extract overlapping clips (with stride)
 - Average predictions across clips
 - Can process videos of any length
@@ -115,6 +120,7 @@ FC6 (4096) → FC7 (4096) → FC8 (num_classes)
 ## Applications
 
 C3D features have been used for:
+
 - Action recognition
 - Action localization
 - Video captioning
@@ -124,6 +130,7 @@ C3D features have been used for:
 ## Performance
 
 On UCF101 (101 action classes):
+
 - C3D: 82.3% accuracy
 - Two-Stream: 88.0% accuracy
 - C3D + Two-Stream fusion: 90.4% accuracy
@@ -133,11 +140,13 @@ The gap closed with better 3D architectures (I3D, R(2+1)D).
 ## Impact
 
 C3D established 3D CNNs as a viable approach for video understanding:
+
 - Inspired many follow-up works (I3D, R(2+1)D, SlowFast)
 - Showed 3D convolutions can learn from data
 - C3D features became a standard baseline
 
 ## Usage
+
 ```python
 from c3d_demo import C3D
 

@@ -9,12 +9,14 @@ This directory contains OpenCV implementations of classical (pre-deep learning) 
 **Kanade-Lucas-Tomasi** tracker using sparse optical flow.
 
 **Key Features:**
+
 - Shi-Tomasi corner detection for feature selection
 - Pyramidal Lucas-Kanade optical flow
 - Automatic feature re-detection when points are lost
 - Trajectory visualization
 
 **Usage:**
+
 ```bash
 # Track with webcam
 python klt_demo.py
@@ -30,11 +32,13 @@ python klt_demo.py --max_corners 200
 ```
 
 **Strengths:**
+
 - Fast (sparse point tracking)
 - Works well for small inter-frame motion
 - Good for structure from motion applications
 
 **Weaknesses:**
+
 - No object identity (just tracks points)
 - Brittle under large motion or occlusion
 - Requires good features (corners)
@@ -44,12 +48,14 @@ python klt_demo.py --max_corners 200
 **Color histogram-based** tracking in HSV space.
 
 **Key Features:**
+
 - MeanShift: Fixed window size
 - CamShift: Adaptive window (scale + orientation)
 - Back-projection visualization
 - Interactive ROI selection
 
 **Usage:**
+
 ```bash
 # MeanShift tracking with webcam
 python meanshift_demo.py
@@ -65,25 +71,28 @@ python meanshift_demo.py --bins 32 --camshift
 ```
 
 **Strengths:**
+
 - Robust to partial occlusion
 - Handles rotation (CamShift)
 - Adapts to scale changes (CamShift)
 - Simple and fast
 
 **Weaknesses:**
+
 - Fails with background clutter of similar color
 - No appearance model update
 - Can drift over time
 
 ## Algorithm Complexity
 
-| Method | Time Complexity | Space | Real-time |
-|--------|----------------|-------|-----------|
-| KLT | O(n·w²·L) | O(n) | Yes (30+ FPS) |
-| MeanShift | O(k·w·h) | O(bins) | Yes (60+ FPS) |
-| CamShift | O(k·w·h) | O(bins) | Yes (60+ FPS) |
+| Method    | Time Complexity | Space   | Real-time     |
+| --------- | --------------- | ------- | ------------- |
+| KLT       | O(n·w²·L)       | O(n)    | Yes (30+ FPS) |
+| MeanShift | O(k·w·h)        | O(bins) | Yes (60+ FPS) |
+| CamShift  | O(k·w·h)        | O(bins) | Yes (60+ FPS) |
 
 where:
+
 - n = number of points
 - w = window size
 - L = pyramid levels
@@ -93,12 +102,14 @@ where:
 ## Tips for Good Results
 
 ### KLT:
+
 1. Ensure sufficient lighting and texture
 2. Use pyramid levels (2-3) for larger motions
 3. Re-detect features periodically
 4. Filter out points with high error
 
 ### MeanShift/CamShift:
+
 1. Choose distinctive color object
 2. Good lighting important
 3. Adjust histogram bins (16-32 typical)
@@ -115,6 +126,7 @@ These classical methods form the **conceptual foundation** for modern trackers:
 - **Color Histograms** → Learned embeddings
 
 **Evolution:**
+
 ```
 Hand-crafted features → Learned features
 Explicit models → End-to-end learning

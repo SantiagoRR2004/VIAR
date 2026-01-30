@@ -10,12 +10,12 @@ By the end of this lab, students will be able to:
 
 1. **Implement Calibration Code in OpenCV**
 2. **Implement Zhang's camera calibration algorithm from scratch**
-3. **Advanced:  Estimate homographies using Direct Linear Transform (DLT) and RANSAC**
+3. **Advanced: Estimate homographies using Direct Linear Transform (DLT) and RANSAC**
 4. **Advanced/Optional: Apply lens distortion correction and image transformations**
 5. **Advanced/optional: Perform color space conversions and histogram equalization**
 6. **Advanced/Optional: Analyze calibration quality and algorithm robustness**
 7. **Connect theoretical concepts to practical implementations**
-8. **Pytorch  for next time**
+8. **Pytorch for next time**
 
 ## Lab Structure
 
@@ -95,19 +95,19 @@ print(f"OpenCV version: {cv2.__version__}")
 
 ## Lab Session Structure
 
-### Hands-on Implementation  
+### Hands-on Implementation
 
 Students work through exercises in order:
 
 1. **Exercise 1.1**: OpenCV Calibration Code (15 min)
 
-Extra/Additional:  
+Extra/Additional:
 
-1. **Exercise E1.1**: PyTorch tensor operations  
+1. **Exercise E1.1**: PyTorch tensor operations
 2. **Exercise E1.2**: Geometric transformations
 3. **Exercise E1.3**: Corner detection analysis
-4. **Exercise E1.4**: Calibration quality assessment  
-5. **Exercise E1.5**: Homography robustness  
+4. **Exercise E1.4**: Calibration quality assessment
+5. **Exercise E1.5**: Homography robustness
 6. **Exercise E1.6**: Color space analysis
 
 ### Recommended Approach

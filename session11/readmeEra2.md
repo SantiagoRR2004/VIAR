@@ -38,6 +38,7 @@ FC (2048) → FC (1024) → FC (num_classes)
 ### Implementation: `3d_shapenets_demo.py`
 
 **Features:**
+
 - Complete 3D CNN implementation with 3D convolutions
 - Two tasks: classification and shape completion
 - Encoder-decoder architecture for completion
@@ -61,6 +62,7 @@ python 3d_shapenets_demo.py \
 ```
 
 **Expected Results:**
+
 - Training accuracy: ~85-90%
 - Validation accuracy: ~80-85%
 - Training time: ~1-2 hours (32³ voxels)
@@ -79,6 +81,7 @@ python 3d_shapenets_demo.py \
 ```
 
 **Expected Results:**
+
 - Completion loss decreases steadily
 - Visual quality improves over training
 - Can complete 30% occluded shapes
@@ -86,6 +89,7 @@ python 3d_shapenets_demo.py \
 ### Mathematical Foundation
 
 **3D Convolution:**
+
 ```
 (w * v)[i,j,k] = Σ Σ Σ w[a,b,c] · v[i+a, j+b, k+c]
                  a b c
@@ -112,6 +116,7 @@ python 3d_shapenets_demo.py \
 ### Synthetic Shapes Generated
 
 The demo generates various geometric primitives:
+
 - **Cube** (class 0): Solid rectangular prism
 - **Sphere** (class 1): Spherical shape
 - **Cylinder** (class 2): Vertical cylinder
@@ -149,6 +154,7 @@ FC layers → Classification
 ### Implementation: `multiview_cnn_demo.py`
 
 **Features:**
+
 - Complete multi-view rendering pipeline
 - Pre-trained ResNet-18 as feature extractor
 - Three pooling strategies: max, mean, learned attention
@@ -170,15 +176,19 @@ python multiview_cnn_demo.py \
 **Pooling Strategies:**
 
 1. **Max Pooling** (default):
+
    ```python
    features_3d = max(features_view1, ..., features_viewV)
    ```
+
    Takes maximum activation across all views.
 
 2. **Mean Pooling**:
+
    ```python
    features_3d = mean(features_view1, ..., features_viewV)
    ```
+
    Averages features across views.
 
 3. **Learned Attention**:
@@ -189,6 +199,7 @@ python multiview_cnn_demo.py \
    Learns to weight important views.
 
 **Expected Results:**
+
 - Training accuracy: ~90-95%
 - Validation accuracy: ~85-90%
 - Better than 3D ShapeNets on classification
@@ -197,11 +208,13 @@ python multiview_cnn_demo.py \
 ### Mathematical Foundation
 
 **View Feature Extraction:**
+
 ```
 f_v = CNN_2D(I_v)  for v = 1, ..., V
 ```
 
 **View Pooling:**
+
 ```
 f_3D = pool(f_1, f_2, ..., f_V)
 ```
@@ -209,6 +222,7 @@ f_3D = pool(f_1, f_2, ..., f_V)
 where pool ∈ {max, mean, learned}
 
 **Classification:**
+
 ```
 y = MLP(f_3D)
 ```
@@ -232,6 +246,7 @@ y = MLP(f_3D)
 ### Camera Configuration
 
 By default, 12 views are rendered from:
+
 - **4 views** at elevation 0° (equator)
 - **4 views** at elevation 30° (above)
 - **4 views** at elevation -30° (below)
@@ -242,16 +257,16 @@ Each set distributed evenly in azimuth (0°, 90°, 180°, 270°).
 
 ## Comparison: 3D ShapeNets vs Multi-View CNN
 
-| Aspect | 3D ShapeNets | Multi-View CNN |
-|--------|--------------|----------------|
-| **Representation** | Voxel grid | Multiple 2D images |
-| **Processing** | 3D convolutions | 2D convolutions |
-| **Resolution** | Low (32³ typical) | High (224×224 per view) |
-| **Memory** | O(n³) - expensive | O(V × H × W) - cheaper |
-| **Pre-training** | None (train from scratch) | ImageNet transfer learning |
-| **Accuracy** | ~75-80% (ModelNet40) | ~89-90% (ModelNet40) |
-| **Generation** | Possible (encoder-decoder) | Difficult |
-| **3D Structure** | Explicit | Implicit |
+| Aspect             | 3D ShapeNets               | Multi-View CNN             |
+| ------------------ | -------------------------- | -------------------------- |
+| **Representation** | Voxel grid                 | Multiple 2D images         |
+| **Processing**     | 3D convolutions            | 2D convolutions            |
+| **Resolution**     | Low (32³ typical)          | High (224×224 per view)    |
+| **Memory**         | O(n³) - expensive          | O(V × H × W) - cheaper     |
+| **Pre-training**   | None (train from scratch)  | ImageNet transfer learning |
+| **Accuracy**       | ~75-80% (ModelNet40)       | ~89-90% (ModelNet40)       |
+| **Generation**     | Possible (encoder-decoder) | Difficult                  |
+| **3D Structure**   | Explicit                   | Implicit                   |
 
 ---
 
@@ -341,11 +356,13 @@ python 3d_shapenets_demo.py --resolution 64 --epochs 50
 ### 3D ShapeNets
 
 **Classification:**
+
 - `shapenets_classifier.pth` - Trained model
 - `shapenets_example.png` - 3D voxel visualization
 - Console output with accuracy metrics
 
 **Completion:**
+
 - `shapenets_completion.pth` - Trained model
 - `completion_results.png` - Before/after comparison
 - Console output with loss metrics
@@ -362,27 +379,27 @@ python 3d_shapenets_demo.py --resolution 64 --epochs 50
 
 ### 3D ShapeNets
 
-| Parameter | Default | Description |
-|-----------|---------|-------------|
-| `--task` | classification | Task: classification or completion |
-| `--resolution` | 32 | Voxel grid resolution (24, 32, 64) |
-| `--num_classes` | 10 | Number of shape categories |
-| `--occlusion_ratio` | 0.3 | Fraction of voxels removed (completion) |
-| `--batch_size` | 16 | Batch size |
-| `--epochs` | 50 | Training epochs |
-| `--lr` | 1e-3 | Learning rate |
+| Parameter           | Default        | Description                             |
+| ------------------- | -------------- | --------------------------------------- |
+| `--task`            | classification | Task: classification or completion      |
+| `--resolution`      | 32             | Voxel grid resolution (24, 32, 64)      |
+| `--num_classes`     | 10             | Number of shape categories              |
+| `--occlusion_ratio` | 0.3            | Fraction of voxels removed (completion) |
+| `--batch_size`      | 16             | Batch size                              |
+| `--epochs`          | 50             | Training epochs                         |
+| `--lr`              | 1e-3           | Learning rate                           |
 
 ### Multi-View CNN
 
-| Parameter | Default | Description |
-|-----------|---------|-------------|
-| `--num_views` | 12 | Number of rendered views |
-| `--pooling` | max | Pooling strategy (max/mean/learned) |
-| `--pretrained` | True | Use ImageNet pre-trained weights |
-| `--image_size` | 224 | Size of rendered images |
-| `--batch_size` | 8 | Batch size |
-| `--epochs` | 30 | Training epochs |
-| `--lr` | 1e-4 | Learning rate |
+| Parameter      | Default | Description                         |
+| -------------- | ------- | ----------------------------------- |
+| `--num_views`  | 12      | Number of rendered views            |
+| `--pooling`    | max     | Pooling strategy (max/mean/learned) |
+| `--pretrained` | True    | Use ImageNet pre-trained weights    |
+| `--image_size` | 224     | Size of rendered images             |
+| `--batch_size` | 8       | Batch size                          |
+| `--epochs`     | 30      | Training epochs                     |
+| `--lr`         | 1e-4    | Learning rate                       |
 
 ---
 
@@ -391,18 +408,18 @@ python 3d_shapenets_demo.py --resolution 64 --epochs 50
 ### 3D ShapeNets
 
 | Resolution | Memory (per sample) | Batch Size | GPU Memory |
-|------------|---------------------|------------|------------|
-| 24³ | ~55 KB | 32 | ~4 GB |
-| 32³ | ~130 KB | 16 | ~4 GB |
-| 64³ | ~1 MB | 4 | ~6 GB |
+| ---------- | ------------------- | ---------- | ---------- |
+| 24³        | ~55 KB              | 32         | ~4 GB      |
+| 32³        | ~130 KB             | 16         | ~4 GB      |
+| 64³        | ~1 MB               | 4          | ~6 GB      |
 
 ### Multi-View CNN
 
 | Num Views | Image Size | Batch Size | GPU Memory |
-|-----------|------------|------------|------------|
-| 8 | 224×224 | 16 | ~4 GB |
-| 12 | 224×224 | 8 | ~4 GB |
-| 20 | 224×224 | 4 | ~4 GB |
+| --------- | ---------- | ---------- | ---------- |
+| 8         | 224×224    | 16         | ~4 GB      |
+| 12        | 224×224    | 8          | ~4 GB      |
+| 20        | 224×224    | 4          | ~4 GB      |
 
 ---
 
@@ -411,6 +428,7 @@ python 3d_shapenets_demo.py --resolution 64 --epochs 50
 ### 3D ShapeNets
 
 **Issue: CUDA out of memory**
+
 ```bash
 # Reduce resolution
 --resolution 24
@@ -422,6 +440,7 @@ python 3d_shapenets_demo.py --resolution 64 --epochs 50
 ```
 
 **Issue: Slow training**
+
 ```bash
 # Use lower resolution
 --resolution 24
@@ -433,6 +452,7 @@ python 3d_shapenets_demo.py --resolution 64 --epochs 50
 ### Multi-View CNN
 
 **Issue: CUDA out of memory**
+
 ```bash
 # Reduce number of views
 --num_views 8
@@ -445,6 +465,7 @@ python 3d_shapenets_demo.py --resolution 64 --epochs 50
 ```
 
 **Issue: Poor accuracy**
+
 ```bash
 # Use pre-trained weights
 --pretrained
@@ -461,28 +482,36 @@ python 3d_shapenets_demo.py --resolution 64 --epochs 50
 ## Extensions and Exercises
 
 ### Exercise 1: Resolution Study (3D ShapeNets)
+
 Compare classification accuracy at different resolutions:
+
 - 16³, 24³, 32³, 48³, 64³
 - Plot accuracy vs resolution
 - Plot memory usage vs resolution
 - Analyze the trade-off
 
 ### Exercise 2: View Count Study (Multi-View CNN)
+
 Investigate effect of number of views:
+
 - Test with 4, 8, 12, 16, 20 views
 - Plot accuracy vs number of views
 - Find the optimal number
 - Visualize which views are most important
 
 ### Exercise 3: Hybrid Approach
+
 Combine both methods:
+
 - Extract voxel features with 3D ShapeNets
 - Extract multi-view features with MVCNN
 - Concatenate and classify
 - Compare with individual methods
 
 ### Exercise 4: Real Data
+
 Apply to real datasets:
+
 - Download ModelNet40 dataset
 - Implement proper data loading
 - Compare with reported results
@@ -546,15 +575,15 @@ Apply to real datasets:
 
 ### ModelNet40 (Reported Results)
 
-| Method | Accuracy | Year |
-|--------|----------|------|
-| 3D ShapeNets | 77.0% | 2015 |
-| VoxNet | 83.0% | 2015 |
-| Multi-View CNN | 90.1% | 2015 |
-| PointNet | 89.2% | 2017 |
-| PointNet++ | 91.9% | 2017 |
+| Method         | Accuracy | Year |
+| -------------- | -------- | ---- |
+| 3D ShapeNets   | 77.0%    | 2015 |
+| VoxNet         | 83.0%    | 2015 |
+| Multi-View CNN | 90.1%    | 2015 |
+| PointNet       | 89.2%    | 2017 |
+| PointNet++     | 91.9%    | 2017 |
 
-*Note: Our demos use synthetic data, so accuracy will differ*
+_Note: Our demos use synthetic data, so accuracy will differ_
 
 ---
 

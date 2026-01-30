@@ -3,6 +3,7 @@
 ### **Python Code** (`detr_complete.py`)
 
 **Key Components:**
+
 - ✅ **2D Positional Encoding**: Spatial information for image features
 - ✅ **Transformer Encoder**: Self-attention on features
 - ✅ **Transformer Decoder**: Cross-attention with object queries
@@ -13,6 +14,7 @@
 - ✅ **Training & Visualization**
 
 **DETR Innovations:**
+
 1. **No anchors or NMS** - Direct set prediction
 2. **Object queries** - Learned embeddings that search for objects
 3. **Hungarian matching** - Optimal assignment between predictions and GT
@@ -22,6 +24,7 @@
 ### **Improved Slides** (LaTeX)
 
 **Structure:**
+
 1. **Introduction** - Transformer revolution in detection
 2. **Architecture** - Complete pipeline explanation
 3. **Object Queries** - The heart of DETR
@@ -38,18 +41,19 @@ Your students now have a **perfect learning path**:
 ```
 1. FPN (Feature Pyramid Networks)
    → Multi-scale feature extraction
-   
-2. YOLO (You Only Look Once)  
+
+2. YOLO (You Only Look Once)
    → Grid-based, anchor boxes, one-stage
-   
+
 3. FCOS (Fully Convolutional One-Stage)
    → Anchor-free, per-pixel, FPN integration
-   
+
 4. DETR (Detection Transformer)
    → Transformers, set prediction, no NMS
 ```
 
 **Learning Journey:**
+
 - **FPN**: Foundation - multi-scale features
 - **YOLO**: Traditional one-stage with grids
 - **FCOS**: Modern anchor-free with FPN
@@ -67,6 +71,7 @@ python detr_complete.py
 ## 📊 What Students Learn
 
 **Technical Skills:**
+
 1. Transformer architecture for vision
 2. Self-attention and cross-attention mechanisms
 3. Positional encodings for 2D data
@@ -75,6 +80,7 @@ python detr_complete.py
 6. GIoU for better localization
 
 **Conceptual Understanding:**
+
 1. Evolution from CNN to Transformer detection
 2. Set prediction vs. traditional detection
 3. Global reasoning with attention
@@ -84,6 +90,7 @@ python detr_complete.py
 ## 🎯 Complete Package Summary
 
 You now have **4 complete implementations** with:
+
 - ✅ Full PyTorch code with training
 - ✅ Synthetic datasets for each method
 - ✅ Loss functions with mathematical details
